@@ -129,7 +129,7 @@ export default function Home() {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title="Open Search for Spark"
+      title="Indexed Full-Text Search for Spark"
       description="The open revolution came to data lakes. Now it's coming to search. High-performance full-text search for Apache Spark.">
       <HomepageHeader />
       <main>
