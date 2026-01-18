@@ -5,7 +5,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 const config = {
   title: 'IndexTables for Spark',
   tagline: 'Your fast search data should be yours',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.png',
 
   future: {
     v4: true,
@@ -77,8 +77,8 @@ const config = {
         title: 'IndexTables',
         logo: {
           alt: 'IndexTables Logo',
-          src: 'img/logo.svg',
-          srcDark: 'img/logo-dark.svg',
+          src: 'img/logo.png',
+          srcDark: 'img/logo-dark.png',
         },
         items: [
           {to: '/why-indextables', label: 'Why IndexTables', position: 'left'},
