@@ -5,15 +5,11 @@ description: The open revolution came to data lakes. Now it's coming to search.
 
 # Why IndexTables
 
-<p style={{fontSize: '1.5rem', marginBottom: '2rem', textAlign: 'center'}}>
-Your fast search data should be yours
-</p>
-
 ## The Data Lakehouse Revolution
 
-Six years ago, the data world flipped upside down.
+In 2019, the data world flipped upside down.
 
-A new idea emerged — **the data lakehouse** — combining the openness of data lakes with the performance of data warehouses.
+A new idea emerged — **[the data lakehouse](https://www.databricks.com/blog/2021/01/08/lakehouse-architecture-realized-enabling-data-teams-with-faster-cheaper-and-more-reliable-open-architectures.html)** — combining the openness of data lakes with the performance of data warehouses.
 
 It wasn't just an architecture. It was a revolution.
 
@@ -68,13 +64,19 @@ IndexTables is open source. You can inspect the code, contribute features, and s
 
 ---
 
+## Who Is This For?
+
+IndexTables is built for **security teams** and **log analytics/observability** use cases — but it's useful for anyone who needs very fast interactive query performance over very large data.
+
+---
+
 ## The Bottom Line
 
 | Traditional Search | IndexTables |
 |--------------------|-------------|
 | Separate cluster to manage | Runs in your Spark executors |
 | Proprietary format | Open QuickwitSplit format |
-| Per-GB licensing | Open source |
+| Per-GB licensing | Free and open source |
 | Vendor lock-in | Your data, your choice |
 
 ---
