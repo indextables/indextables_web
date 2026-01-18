@@ -11,8 +11,8 @@ const config = {
     v4: true,
   },
 
-  url: 'https://indextables.github.io',
-  baseUrl: '/indextables_web/',
+  url: 'https://www.indextables.io',
+  baseUrl: '/',
 
   organizationName: 'indextables',
   projectName: 'indextables_web',
