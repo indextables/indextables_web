@@ -8,8 +8,8 @@ const FeatureList = [
     icon: '🚀',
     description: (
       <>
-        Runs inside Spark executors. No Elasticsearch servers to manage,
-        scale, or pay for. Just add the library and start indexing.
+        Runs inside Spark executors. No specialty servers to manage, scale, or pay for.
+        Just add the library and start indexing.
       </>
     ),
   },
@@ -29,7 +29,17 @@ const FeatureList = [
     description: (
       <>
         QuickwitSplit format optimized for S3 and Azure. L2 disk cache
-        auto-enables on Databricks and EMR NVMe storage.
+        makes massive queries instant.
+      </>
+    ),
+  },
+  {
+    title: '10-1000x Faster Analytics',
+    icon: '📊',
+    description: (
+      <>
+        Aggregations run directly in the search engine, not Spark.
+        Evaluate billions of rows in seconds, not minutes or hours.
       </>
     ),
   },
@@ -40,16 +50,6 @@ const FeatureList = [
       <>
         IndexQuery operators with Tantivy/Quickwit syntax. Boolean queries,
         phrase search, fuzzy matching, and more.
-      </>
-    ),
-  },
-  {
-    title: '10-1000x Faster Analytics',
-    icon: '📊',
-    description: (
-      <>
-        Aggregations run directly in the search engine, not Spark.
-        COUNT millions of rows in milliseconds, not minutes.
       </>
     ),
   },

@@ -16,7 +16,7 @@ val data = Seq(
   (1, "Introduction to Machine Learning", "machine learning basics tutorial"),
   (2, "Advanced Deep Learning", "neural networks deep learning AI"),
   (3, "Data Engineering Best Practices", "spark hadoop data pipelines"),
-  (4, "Search Engine Architecture", "elasticsearch lucene search indexing")
+  (4, "Search Engine Architecture", "tantivy lucene search indexing")
 ).toDF("id", "title", "content")
 ```
 
