@@ -38,13 +38,20 @@ IndexTables brings that same open revolution to search — with performance that
 
 ### Built on Spark
 
-IndexTables runs as a native Spark DataSource. No separate cluster. No new infrastructure. Your search indexes live alongside your data in the lakehouse.
+IndexTables runs as a native Spark DataSource V2 — the same interface you use for Delta Lake, Iceberg, and Parquet. No separate cluster. No new infrastructure. Just add the library to your existing Spark environment.
 
-```scala
-// Just add the library and start indexing
-df.write.format("io.indextables.spark.core.IndexTables4SparkTableProvider")
-  .option("spark.indextables.indexing.typemap.content", "text")
+```python
+# Write an index
+df.write.format("io.indextables.spark.core.IndexTables4SparkTableProvider") \
+  .option("spark.indextables.indexing.typemap.content", "text") \
   .save("s3://bucket/logs")
+
+# Read and query with SQL
+logs = spark.read.format("io.indextables.spark.core.IndexTables4SparkTableProvider") \
+  .load("s3://bucket/logs")
+logs.createOrReplaceTempView("logs")
+
+spark.sql("SELECT * FROM logs WHERE content indexquery 'error AND timeout'")
 ```
 
 ### Powered by Tantivy and Quickwit
