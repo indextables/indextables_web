@@ -1,0 +1,66 @@
+/**
+ * IndexTables custom styles
+ */
+
+:root {
+  --ifm-color-primary: #1a73e8;
+  --ifm-color-primary-dark: #1765cc;
+  --ifm-color-primary-darker: #1660c1;
+  --ifm-color-primary-darkest: #124f9f;
+  --ifm-color-primary-light: #3485ed;
+  --ifm-color-primary-lighter: #408bf0;
+  --ifm-color-primary-lightest: #6aa5f4;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #4dabf7;
+  --ifm-color-primary-dark: #339af0;
+  --ifm-color-primary-darker: #228be6;
+  --ifm-color-primary-darkest: #1c7ed6;
+  --ifm-color-primary-light: #74c0fc;
+  --ifm-color-primary-lighter: #a5d8ff;
+  --ifm-color-primary-lightest: #d0ebff;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Hero section */
+.hero--primary {
+  background: linear-gradient(135deg, var(--ifm-color-primary-darkest) 0%, var(--ifm-color-primary) 100%);
+}
+
+.hero__subtitle {
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+/* Code blocks */
+.theme-code-block {
+  border-radius: 8px;
+}
+
+/* Admonitions */
+.admonition {
+  border-radius: 8px;
+}
+
+/* Tables */
+table {
+  display: table;
+  width: 100%;
+}
+
+th, td {
+  padding: 0.75rem 1rem;
+}
+
+/* Navbar */
+.navbar__title {
+  font-weight: 700;
+}
+
+/* Footer */
+.footer--dark {
+  background: var(--ifm-color-primary-darkest);
+}
