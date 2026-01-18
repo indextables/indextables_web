@@ -18,29 +18,34 @@ But one domain missed the revolution: **search**. Observability and security sea
 
 **IndexTables brings that same open revolution to search** — with performance that rivals the biggest proprietary platforms, built entirely on open tech.
 
-Read our full manifesto: [Why IndexTables](/why-indextables)
+Learn more: [Why IndexTables](/why-indextables)
 
 ## What is IndexTables?
 
 IndexTables brings high-performance full-text search to Apache Spark. Built on [Tantivy](https://github.com/quickwit-oss/tantivy) and [Quickwit](https://quickwit.io), it runs embedded in Spark executors - no external servers required.
 
-```scala
-// Write with full-text indexing
-df.write.format("io.indextables.spark.core.IndexTables4SparkTableProvider")
-  .option("spark.indextables.indexing.typemap.content", "text")
+```python
+# Write with full-text indexing
+df.write.format("io.indextables.spark.core.IndexTables4SparkTableProvider") \
+  .option("spark.indextables.indexing.typemap.content", "text") \
   .save("s3://bucket/logs")
 
-// Query with IndexQuery
-df.filter($"content" indexquery "error AND database").show()
+# Read and query with IndexQuery
+logs = spark.read \
+  .format("io.indextables.spark.core.IndexTables4SparkTableProvider") \
+  .load("s3://bucket/logs")
+
+logs.filter("content indexquery 'error AND database'").show()
 ```
 
 ## Key Features
 
-- **Full-Text Search**: Native Tantivy/Quickwit query syntax with IndexQuery operators
-- **Aggregate Pushdown**: COUNT, SUM, AVG, MIN, MAX executed in the search engine
-- **Cloud Optimized**: QuickwitSplit format for S3 and Azure
-- **Zero Infrastructure**: No Elasticsearch cluster to manage
-- **Open Format**: Your data stays yours, in open formats on your storage
+- **No Infrastructure**: Runs inside Spark executors - just add the library and start indexing
+- **Spark Native**: Full filter pushdown, aggregate pushdown, and partition pruning with Spark SQL
+- **Cloud Ready**: QuickwitSplit format optimized for S3 and Azure with L2 disk cache on NVMe
+- **Full-Text Search**: IndexQuery operators with Tantivy/Quickwit syntax - boolean queries, phrase search, fuzzy matching
+- **10-1000x Faster Analytics**: Aggregations run directly in the search engine, not Spark
+- **Time-Series Analytics**: Built-in date histograms and bucket aggregations for log analysis
 
 ## Getting Started
 
