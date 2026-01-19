@@ -40,13 +40,13 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
-          editUrl: 'https://github.com/indextables/indextables_spark_web/edit/main/',
+          editUrl: 'https://github.com/indextables/indextables_web/edit/main/',
           showLastUpdateTime: true,
           showLastUpdateAuthor: true,
         },
         blog: {
           showReadingTime: true,
-          editUrl: 'https://github.com/indextables/indextables_spark_web/edit/main/',
+          editUrl: 'https://github.com/indextables/indextables_web/edit/main/',
           blogSidebarCount: 'ALL',
           blogSidebarTitle: 'All Posts',
           feedOptions: {
