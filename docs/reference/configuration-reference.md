@@ -58,7 +58,17 @@ Settings for transaction log management, checkpointing, and caching.
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `spark.indextables.transaction.cache.enabled` | true | Enable transaction log caching |
-| `spark.indextables.transaction.cache.expirationSeconds` | 300 | Cache TTL (5 minutes) |
+| `spark.indextables.transaction.cache.expirationSeconds` | 300 | Legacy TTL for all caches (overrides individual TTLs) |
+| `spark.indextables.cache.checkpoint.ttl` | 5 | Checkpoint info cache TTL in minutes |
+| `spark.indextables.cache.checkpoint.size` | 200 | Maximum checkpoint cache entries |
+| `spark.indextables.cache.log.ttl` | 5 | Version log cache TTL in minutes |
+| `spark.indextables.cache.log.size` | 1000 | Maximum version log cache entries |
+| `spark.indextables.cache.snapshot.ttl` | 10 | Snapshot cache TTL in minutes |
+| `spark.indextables.cache.snapshot.size` | 100 | Maximum snapshot cache entries |
+| `spark.indextables.cache.filelist.ttl` | 2 | File list cache TTL in minutes |
+| `spark.indextables.cache.filelist.size` | 50 | Maximum file list cache entries |
+| `spark.indextables.cache.metadata.ttl` | 30 | Metadata cache TTL in minutes |
+| `spark.indextables.cache.metadata.size` | 100 | Maximum metadata cache entries |
 
 ### Retention
 
