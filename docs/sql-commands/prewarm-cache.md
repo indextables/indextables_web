@@ -108,6 +108,79 @@ PREWARM INDEXTABLES CACHE 's3://bucket/logs'
   WHERE region = 'us-east';
 ```
 
+## Async Mode
+
+For large tables or production environments, use async mode to start prewarming in the background without blocking your session. This allows you to continue running queries while cache prewarming happens in separate threads.
+
+### Async Syntax
+
+```sql
+PREWARM INDEXTABLES CACHE '<path>'
+  [FOR SEGMENTS (<segments>)]
+  [ON FIELDS (<fields>)]
+  [WITH PERWORKER PARALLELISM OF <n>]
+  [WHERE <partition_predicate>]
+  ASYNC MODE
+```
+
+### Starting an Async Prewarm
+
+```sql
+-- Start background prewarming
+PREWARM INDEXTABLES CACHE 's3://bucket/logs' ASYNC MODE;
+```
+
+This returns immediately with a job ID that you can use to monitor progress:
+
+| job_id | async_mode | status |
+|--------|------------|--------|
+| prewarm-abc123 | true | started |
+
+### Monitoring Async Jobs
+
+Check the status of all async prewarm jobs across the cluster:
+
+```sql
+DESCRIBE INDEXTABLES PREWARM JOBS;
+```
+
+See [DESCRIBE PREWARM JOBS](/docs/sql-commands/describe-commands#describe-prewarm-jobs) for output details.
+
+### Waiting for Completion
+
+If you need to block until async prewarming completes (e.g., before running benchmarks):
+
+```sql
+-- Wait indefinitely
+WAIT FOR INDEXTABLES PREWARM JOBS;
+
+-- Wait with timeout (in seconds)
+WAIT FOR INDEXTABLES PREWARM JOBS TIMEOUT 300;
+```
+
+See [WAIT FOR PREWARM JOBS](/docs/sql-commands/describe-commands#wait-for-prewarm-jobs) for more details.
+
+### Async Examples
+
+```sql
+-- Start async prewarm for analytics workload
+PREWARM INDEXTABLES CACHE 's3://bucket/logs'
+  FOR SEGMENTS (TERM_DICT, POSTINGS, FAST_FIELD, FIELD_NORM)
+  ASYNC MODE;
+
+-- Start async prewarm for specific partition
+PREWARM INDEXTABLES CACHE 's3://bucket/logs'
+  FOR SEGMENTS (TERM_DICT, POSTINGS)
+  WHERE date >= '2024-01-01'
+  ASYNC MODE;
+
+-- Check job status
+DESCRIBE INDEXTABLES PREWARM JOBS;
+
+-- Wait for all jobs to complete before running benchmark
+WAIT FOR INDEXTABLES PREWARM JOBS TIMEOUT 600;
+```
+
 ## Monitor Disk Cache Usage
 
 Check how much disk space your cache is using:
@@ -144,6 +217,8 @@ This shows cache size, hit rate, and available capacity per executor.
 | fields | Field names (or "all") |
 | duration_ms | Duration in milliseconds |
 | status | success, partial, no_splits |
+| job_id | Async job identifier (async mode only) |
+| async_mode | Whether async mode was used |
 
 ## Configuration
 
@@ -151,4 +226,14 @@ This shows cache size, hit rate, and available capacity per executor.
 spark.conf.set("spark.indextables.prewarm.splitsPerTask", "2")
 spark.conf.set("spark.indextables.prewarm.maxRetries", "10")
 spark.conf.set("spark.indextables.prewarm.failOnMissingField", "true")
+```
+
+### Async Mode Configuration
+
+```scala
+// Maximum concurrent async prewarm jobs per worker (default: 1)
+spark.conf.set("spark.indextables.prewarm.async.maxConcurrent", "2")
+
+// How long to retain completed job metadata in milliseconds (default: 3600000 = 1 hour)
+spark.conf.set("spark.indextables.prewarm.async.completedJobRetentionMs", "3600000")
 ```

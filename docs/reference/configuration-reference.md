@@ -130,6 +130,13 @@ Settings for the PREWARM CACHE SQL command.
 | `spark.indextables.prewarm.failOnMissingField` | true | Fail if specified field doesn't exist |
 | `spark.indextables.prewarm.catchUpNewHosts` | false | Prewarm on new hosts added to cluster |
 
+### Async Prewarm
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.prewarm.async.maxConcurrent` | 1 | Maximum concurrent async prewarm jobs per worker |
+| `spark.indextables.prewarm.async.completedJobRetentionMs` | 3600000 | Retention period for completed job metadata (1 hour) |
+
 ## Disk Cache (L2)
 
 Settings for the L2 disk cache on NVMe storage.
