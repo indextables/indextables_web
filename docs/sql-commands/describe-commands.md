@@ -121,6 +121,71 @@ DESCRIBE INDEXTABLES ENVIRONMENT;
 
 Useful for debugging configuration issues across a cluster.
 
+## DESCRIBE PREWARM JOBS
+
+View the status of async prewarm jobs across all executors:
+
+```sql
+DESCRIBE INDEXTABLES PREWARM JOBS;
+```
+
+### Output
+
+| Column | Description |
+|--------|-------------|
+| job_id | Unique job identifier |
+| executor_id | Executor running the job |
+| host | Executor hostname |
+| table_path | Path being prewarmed |
+| status | pending, running, completed, failed |
+| splits_total | Total splits to prewarm |
+| splits_completed | Splits prewarmed so far |
+| progress_percent | Completion percentage |
+| started_at | Job start timestamp |
+| completed_at | Job completion timestamp (if finished) |
+| error_message | Error details (if failed) |
+
+This command provides cluster-wide visibility into all async prewarm operations, useful for monitoring long-running prewarm jobs or debugging failures.
+
+## WAIT FOR PREWARM JOBS
+
+Block until all async prewarm jobs complete:
+
+```sql
+-- Wait indefinitely for all jobs to complete
+WAIT FOR INDEXTABLES PREWARM JOBS;
+
+-- Wait with a timeout (in seconds)
+WAIT FOR INDEXTABLES PREWARM JOBS TIMEOUT 300;
+```
+
+### Output
+
+| Column | Description |
+|--------|-------------|
+| jobs_completed | Number of jobs that completed successfully |
+| jobs_failed | Number of jobs that failed |
+| total_splits_prewarmed | Total splits prewarmed across all jobs |
+| total_duration_ms | Total time waited in milliseconds |
+| timed_out | Whether the wait timed out |
+
+Use this command when you need to ensure prewarming is complete before running benchmarks or time-sensitive queries.
+
+### Examples
+
+```sql
+-- Start async prewarm, then wait before benchmark
+PREWARM INDEXTABLES CACHE 's3://bucket/logs' ASYNC MODE;
+
+-- Do other work...
+
+-- Wait up to 10 minutes for prewarm to complete
+WAIT FOR INDEXTABLES PREWARM JOBS TIMEOUT 600;
+
+-- Now run your benchmark queries
+SELECT COUNT(*) FROM indextables('s3://bucket/logs') WHERE status = 'error';
+```
+
 ## FLUSH Commands
 
 ### FLUSH DISK CACHE
