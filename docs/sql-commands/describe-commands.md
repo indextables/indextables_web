@@ -101,6 +101,43 @@ Returns detailed information about all transaction log actions including:
 - `min_values/max_values` - Column statistics for data skipping
 - And many more fields for debugging and analysis
 
+## DESCRIBE STATE
+
+View the state format and checkpoint information for a table:
+
+```sql
+DESCRIBE INDEXTABLES STATE 's3://bucket/my_index';
+```
+
+### Output
+
+| Column | Description |
+|--------|-------------|
+| table_path | Path to the IndexTable |
+| state_format | Current state format: `avro` or `json` |
+| protocol_version | Table protocol version (V4 for Avro) |
+| checkpoint_version | Version number of the latest checkpoint |
+| num_files | Total number of active files in the table |
+| num_manifests | Number of Avro manifest files (Avro format only) |
+| total_state_size_bytes | Total size of state files |
+| compression | Compression codec used (Avro: zstd, snappy, none) |
+
+### Example
+
+```sql
+DESCRIBE INDEXTABLES STATE 's3://bucket/logs';
+```
+
+```
++---------------------------+----------------+------------------+--------------------+-----------+---------------+----------------------+-------------+
+| table_path                | state_format   | protocol_version | checkpoint_version | num_files | num_manifests | total_state_size_bytes | compression |
++---------------------------+----------------+------------------+--------------------+-----------+---------------+----------------------+-------------+
+| s3://bucket/logs          | avro           | V4               | 42                 | 73521     | 8             | 2456789              | zstd        |
++---------------------------+----------------+------------------+--------------------+-----------+---------------+----------------------+-------------+
+```
+
+Use this command to verify the state format of your tables and monitor checkpoint health.
+
 ## DESCRIBE ENVIRONMENT
 
 View Spark and Hadoop configuration across all executors:

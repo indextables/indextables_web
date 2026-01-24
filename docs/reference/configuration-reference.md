@@ -43,6 +43,20 @@ Settings that control how data is indexed during write operations.
 
 Settings for transaction log management, checkpointing, and caching.
 
+### State Format
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.state.format` | avro | State format for checkpoints: `avro` or `json` |
+| `spark.indextables.state.compression` | zstd | Compression for Avro state: `zstd`, `snappy`, or `none` |
+| `spark.indextables.state.compaction.threshold` | 10 | Number of manifest files before triggering compaction |
+| `spark.indextables.state.compaction.targetSize` | 128M | Target size for compacted manifest files |
+| `spark.indextables.state.manifest.maxEntries` | 100000 | Maximum entries per manifest file |
+
+:::tip Avro State Format
+The Avro format (default) provides up to 28x faster reads and 700x less I/O for incremental writes compared to JSON. Use `CHECKPOINT INDEXTABLES` to upgrade existing JSON tables.
+:::
+
 ### Checkpointing
 
 | Setting | Default | Description |
@@ -51,7 +65,7 @@ Settings for transaction log management, checkpointing, and caching.
 | `spark.indextables.checkpoint.interval` | 10 | Create checkpoint every N transactions |
 | `spark.indextables.checkpoint.parallelism` | 8 | Thread pool size for parallel I/O |
 | `spark.indextables.checkpoint.read.timeoutSeconds` | 30 | Timeout for parallel reads |
-| `spark.indextables.transaction.compression.enabled` | true | Enable GZIP compression for transaction files |
+| `spark.indextables.transaction.compression.enabled` | true | Enable GZIP compression for version files |
 
 ### Transaction Log Cache
 
