@@ -49,9 +49,24 @@ Settings for transaction log management, checkpointing, and caching.
 |---------|---------|-------------|
 | `spark.indextables.state.format` | avro | State format for checkpoints: `avro` or `json` |
 | `spark.indextables.state.compression` | zstd | Compression for Avro state: `zstd`, `snappy`, or `none` |
-| `spark.indextables.state.compaction.threshold` | 10 | Number of manifest files before triggering compaction |
+
+### State Compaction
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.state.compaction.tombstoneThreshold` | 0.10 | Tombstone ratio (0.0-1.0) that triggers manifest rewrite |
+| `spark.indextables.state.compaction.maxManifests` | 20 | Maximum manifests before triggering compaction |
+| `spark.indextables.state.compaction.afterMerge` | true | Automatically compact after MERGE SPLITS operations |
 | `spark.indextables.state.compaction.targetSize` | 128M | Target size for compacted manifest files |
 | `spark.indextables.state.manifest.maxEntries` | 100000 | Maximum entries per manifest file |
+
+### State Write Retry
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.state.retry.maxAttempts` | 10 | Maximum retry attempts for concurrent write conflicts |
+| `spark.indextables.state.retry.baseDelayMs` | 100 | Base delay in milliseconds between retries |
+| `spark.indextables.state.retry.maxDelayMs` | 5000 | Maximum delay in milliseconds between retries |
 
 :::tip Avro State Format
 The Avro format (default) provides up to 28x faster reads and 700x less I/O for incremental writes compared to JSON. Use `CHECKPOINT INDEXTABLES` to upgrade existing JSON tables.

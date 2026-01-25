@@ -28,16 +28,17 @@ The Avro-based state format is the default for new tables and delivers substanti
 ```
 s3://bucket/my_index/
   _transaction_log/
-    00000000000000000001.json          # Version files (unchanged)
-    00000000000000000002.json
-    state-v3/                          # Avro state directory
-      _manifest.json                   # State metadata
-      manifest-00000.avro              # File entries (Zstd compressed)
-      manifest-00001.avro
+    manifests/                         # Shared manifest directory
+      manifest-5a7523a5.avro           # File entries (Zstd compressed)
+      manifest-bd72c128.avro
+    state-v00000000000000000042/       # State version directory
+      _manifest.avro                   # State metadata (references shared manifests)
     _last_checkpoint                   # Checkpoint pointer
 ```
 
-The `_manifest.json` contains metadata including format version, manifest file list with partition bounds, tombstones for deleted files, and protocol version information.
+Manifests are stored in a shared `manifests/` directory and reused across state versions. Each state version's `_manifest.avro` references which manifests contain its active files, enabling incremental writes without rewriting all file entries.
+
+The `_manifest.avro` contains metadata including format version, manifest file list with partition bounds, tombstones for deleted files, and protocol version information.
 
 **Key features:**
 - **Partition pruning**: Filters manifests based on partition bounds before reading, enabling efficient queries on specific partitions in multi-million-file tables
@@ -47,7 +48,7 @@ The `_manifest.json` contains metadata including format version, manifest file l
 
 ### JSON Format (Legacy)
 
-The JSON format is still supported for backward compatibility:
+The JSON format is still supported for backward compatibility. Legacy tables store version files as JSON:
 
 ```
 s3://bucket/my_index/
@@ -58,6 +59,10 @@ s3://bucket/my_index/
 ```
 
 Existing JSON tables continue to function without modification. The format is auto-detected from the `_last_checkpoint` file.
+
+:::note
+Tables created with the Avro format do not have JSON version files. The JSON version files shown above only exist in legacy tables or tables that were upgraded from JSON to Avro.
+:::
 
 ### Upgrading to Avro Format
 
@@ -143,6 +148,16 @@ Use this to:
 :::tip Upgrading Legacy Tables
 If you have existing tables using the JSON checkpoint format, simply run `CHECKPOINT INDEXTABLES` to upgrade them to the Avro format. This is the recommended way to migrate tables for better read and write performance.
 :::
+
+### COMPACT INDEXTABLES
+
+Force compaction of the Avro state manifests. Compaction rewrites manifests with high tombstone ratios and consolidates small manifests.
+
+```sql
+COMPACT INDEXTABLES 's3://bucket/my_index';
+```
+
+Compaction runs automatically during writes when thresholds are exceeded, but you can force it manually to reclaim space or optimize read performance.
 
 ### TRUNCATE INDEXTABLES TIME TRAVEL
 
