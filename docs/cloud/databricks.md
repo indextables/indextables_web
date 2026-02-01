@@ -9,13 +9,16 @@ IndexTables is optimized for Databricks with automatic detection of local NVMe s
 
 ## Installation
 
-1. Download the shaded JAR from the releases page
+1. Download the shaded JAR from Maven Central:
+   ```
+   https://repo1.maven.org/maven2/io/indextables/indextables_spark/0.4.5_spark_3.5.3/indextables_spark-0.4.5_spark_3.5.3-linux-x86_64-shaded.jar
+   ```
 2. Upload it to a Unity Catalog volume (e.g., `/Volumes/my_catalog/my_schema/artifacts/`)
 3. Create an init script that copies the JAR to the Databricks jars directory:
 
 ```bash
 #!/bin/sh
-cp /Volumes/my_catalog/my_schema/artifacts/indextables_spark-0.4.0-linux-x86_64-shaded.jar /databricks/jars
+cp /Volumes/my_catalog/my_schema/artifacts/indextables_spark-0.4.5_spark_3.5.3-linux-x86_64-shaded.jar /databricks/jars
 ```
 
 4. Upload the init script to your volume and configure it in your cluster settings under **Advanced Options > Init Scripts**

@@ -100,3 +100,36 @@ WHERE status = 'error'
 GROUP BY indextables_date_histogram(timestamp, '1h')
 ORDER BY hour
 ```
+
+## Multi-Key Aggregations
+
+Bucket aggregations support multiple GROUP BY columns for dimensional analysis:
+
+```sql
+SELECT
+  indextables_date_histogram(timestamp, '15m') as time_slice,
+  hostname,
+  COUNT(*) as cnt,
+  AVG(latency) as avg_latency
+FROM logs
+GROUP BY indextables_date_histogram(timestamp, '15m'), hostname
+ORDER BY time_slice, hostname
+```
+
+This enables time-series analysis broken down by additional dimensions:
+
+```sql
+-- Traffic by region and status code over time
+SELECT
+  indextables_date_histogram(timestamp, '1h') as hour,
+  region,
+  status_code,
+  COUNT(*) as requests
+FROM access_logs
+GROUP BY indextables_date_histogram(timestamp, '1h'), region, status_code
+ORDER BY hour, region, requests DESC
+```
+
+:::note
+Multi-key aggregations use nested TermsAggregation internally. The bucket aggregation (DateHistogram/Histogram/Range) is the primary grouping, with additional columns using nested term aggregations.
+:::

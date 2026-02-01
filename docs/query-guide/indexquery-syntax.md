@@ -103,3 +103,34 @@ WHERE content indexquery '"connection refused" OR timeout'
 2. **Quote phrases** - For exact multi-word matches
 3. **Avoid leading wildcards** - `*error` is slow
 4. **Combine with partition filters** - For best performance
+
+## Safety Limits
+
+### Unqualified _indexall Queries
+
+When searching all fields with `_indexall indexquery`, unqualified queries (without field prefixes) are rejected if the table has more than 10 fields. This prevents accidentally expensive full-table searches on wide tables.
+
+```sql
+-- This may fail on wide tables (>10 fields):
+SELECT * FROM logs WHERE _indexall indexquery 'error'
+
+-- Instead, qualify your search with a field prefix:
+SELECT * FROM logs WHERE _indexall indexquery 'message:error'
+
+-- Or search a specific text field:
+SELECT * FROM logs WHERE message indexquery 'error'
+```
+
+### Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.indexquery.indexall.maxUnqualifiedFields` | 10 | Maximum fields for unqualified `_indexall` queries. Set to 0 to disable the check. |
+
+```scala
+// Allow unqualified searches on tables with up to 50 fields
+spark.conf.set("spark.indextables.indexquery.indexall.maxUnqualifiedFields", "50")
+
+// Disable the safety check entirely (not recommended)
+spark.conf.set("spark.indextables.indexquery.indexall.maxUnqualifiedFields", "0")
+```
