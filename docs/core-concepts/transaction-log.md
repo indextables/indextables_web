@@ -31,7 +31,7 @@ IndexTables supports two transaction log state formats:
 
 ### Avro Format Benefits
 
-- **10-28x faster reads**: 70K files load in <500ms vs ~14s with JSON
+- **10-28x faster reads**: 70K files load in under 500ms vs ~14s with JSON
 - **Incremental writes**: New files append to manifests without rewriting
 - **Partition pruning**: Skip irrelevant manifests for large tables
 - **Automatic compaction**: Maintains optimal read performance
