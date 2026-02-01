@@ -85,11 +85,41 @@ Fast fields enable:
 - Bucket aggregations (DateHistogram, Histogram, Range)
 - Efficient sorting
 
+## IP Address Fields
+
+For efficient IP address indexing and querying (both IPv4 and IPv6), use the `ip` field type:
+
+```scala
+// Per-field approach
+df.write.format("io.indextables.spark.core.IndexTables4SparkTableProvider")
+  .option("spark.indextables.indexing.typemap.client_ip", "ip")
+  .save("path")
+
+// List-based approach (multiple fields)
+df.write.format("io.indextables.spark.core.IndexTables4SparkTableProvider")
+  .option("spark.indextables.indexing.typemap.ip", "client_ip,server_ip")
+  .save("path")
+```
+
+### Supported Operations
+
+- `=` (exact match): `client_ip = '192.168.1.1'`
+- `>`, `<`, `>=`, `<=` (range queries): `client_ip >= '192.168.1.0' AND client_ip <= '192.168.1.255'`
+- `IN` (set membership): `client_ip IN ('192.168.1.1', '10.0.0.1')`
+- IPv6 support: `client_ip = '2001:db8::1'`
+
+### Use Cases
+
+- Network traffic analysis
+- Access log filtering by source/destination IP
+- Geo-IP filtering with CIDR-style range queries
+
 ## Supported Schema Types
 
 | Spark Type | Tantivy Type | Notes |
 |------------|--------------|-------|
-| String | Text/String | Configurable |
+| String | Text/String | Configurable via typemap |
+| String (ip typemap) | IP | IPv4 and IPv6 support |
 | Integer/Long | I64 | - |
 | Float/Double | F64 | - |
 | Boolean | Bool | - |

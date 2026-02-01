@@ -52,16 +52,25 @@ df.filter($"status".isin("pending", "active", "completed"))
 
 ## NULL Checks
 
-```scala
-// IS NOT NULL - fully pushed down
-df.filter($"category".isNotNull)
+Both `IS NULL` and `IS NOT NULL` are pushed down to the search engine for FAST fields:
 
-// IS NULL - evaluated by Spark (not pushed down)
-df.filter($"category".isNull)
+```scala
+// IS NOT NULL - pushed down using ExistsQuery
+df.filter($"email".isNotNull)
+
+// IS NULL - pushed down using negated ExistsQuery
+df.filter($"email".isNull)
 ```
 
-:::note
-`IS NULL` filters are not pushed down because the search engine doesn't index null values. Spark will post-filter these results.
+:::note FAST Field Requirement
+NULL check pushdown requires the field to be configured as a FAST field. For non-FAST fields, the filter gracefully falls back to Spark-side evaluation.
+
+```scala
+// Configure fast fields during write
+df.write.format("io.indextables.spark.core.IndexTables4SparkTableProvider")
+  .option("spark.indextables.indexing.fastfields", "email,status,category")
+  .save("path")
+```
 :::
 
 ## Compound Filters
@@ -170,8 +179,8 @@ df.filter($"metadata.score" >= 0.5)
 | `<` (LessThan) | Yes | All fields including nested JSON |
 | `<=` (LessThanOrEqual) | Yes | All fields including nested JSON |
 | `IN` | Yes | Full pushdown |
-| `IS NOT NULL` | Yes | Regular fields only (not nested JSON) |
-| `IS NULL` | No | Search engine doesn't index nulls |
+| `IS NOT NULL` | Yes | FAST fields only (non-FAST falls back to Spark) |
+| `IS NULL` | Yes | FAST fields only (non-FAST falls back to Spark) |
 | `AND` | Yes | If both children are supported |
 | `OR` | Yes | If both children are supported |
 | `NOT` | Yes | If child is supported |

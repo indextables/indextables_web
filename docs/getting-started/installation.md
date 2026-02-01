@@ -12,32 +12,36 @@ Add IndexTables to your project.
 ```xml
 <dependency>
   <groupId>io.indextables</groupId>
-  <artifactId>indextables4spark_2.12</artifactId>
-  <version>0.4.0_3.5.3</version>
+  <artifactId>indextables_spark</artifactId>
+  <version>0.4.5_spark_3.5.3</version>
+  <classifier>linux-x86_64-shaded</classifier>
 </dependency>
 ```
 
 ## SBT
 
 ```scala
-libraryDependencies += "io.indextables" %% "indextables4spark" % "0.4.0_3.5.3"
+libraryDependencies += "io.indextables" % "indextables_spark" % "0.4.5_spark_3.5.3" classifier "linux-x86_64-shaded"
 ```
 
 ## Spark Shell
 
 ```bash
-spark-shell --packages io.indextables:indextables4spark_2.12:0.4.0_3.5.3
+spark-shell --packages io.indextables:indextables_spark:0.4.5_spark_3.5.3:linux-x86_64-shaded
 ```
 
 ## Databricks
 
-1. Download the shaded JAR from the releases page
+1. Download the shaded JAR from Maven Central:
+   ```
+   https://repo1.maven.org/maven2/io/indextables/indextables_spark/0.4.5_spark_3.5.3/indextables_spark-0.4.5_spark_3.5.3-linux-x86_64-shaded.jar
+   ```
 2. Upload it to a Unity Catalog volume (e.g., `/Volumes/my_catalog/my_schema/artifacts/`)
 3. Create an init script that copies the JAR to the Databricks jars directory:
 
 ```bash
 #!/bin/sh
-cp /Volumes/my_catalog/my_schema/artifacts/indextables_spark-0.4.0-linux-x86_64-shaded.jar /databricks/jars
+cp /Volumes/my_catalog/my_schema/artifacts/indextables_spark-0.4.5_spark_3.5.3-linux-x86_64-shaded.jar /databricks/jars
 ```
 
 4. Upload the init script to your volume and configure it in your cluster settings under **Advanced Options > Init Scripts**

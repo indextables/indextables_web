@@ -77,6 +77,71 @@ DESCRIBE INDEXTABLES DATA SKIPPING STATS;
 - `in_range_hits/misses` - Range check cache stats
 - Hit rates and cache sizes
 
+## DESCRIBE STATE
+
+View transaction log state format, version, and statistics:
+
+```sql
+DESCRIBE INDEXTABLES STATE 's3://bucket/my_index';
+```
+
+### Output
+
+| Column | Description |
+|--------|-------------|
+| format | State format: "avro" or "json" |
+| version | Current state version |
+| total_files | Total active files in table |
+| tombstone_count | Number of tombstone entries |
+| tombstone_ratio | Tombstone percentage (triggers compaction at 10%) |
+| manifest_count | Number of manifest files (Avro only) |
+| protocol_version | Table protocol version |
+| last_checkpoint | Most recent checkpoint version |
+
+Use this to monitor table health and determine if compaction or checkpoint is needed.
+
+## DESCRIBE COMPONENT SIZES
+
+Analyze storage consumption at the index component level:
+
+```sql
+DESCRIBE INDEXTABLES COMPONENT SIZES 's3://bucket/my_index';
+
+-- With partition filter for efficiency
+DESCRIBE INDEXTABLES COMPONENT SIZES 's3://bucket/my_index'
+  WHERE date = '2024-01-15';
+```
+
+### Output
+
+| Column | Description |
+|--------|-------------|
+| split_path | Split file path |
+| partition_values | Partition column values |
+| component | Component identifier |
+| component_type | term, postings, positions, store, fastfield, fieldnorm |
+| size_bytes | Size in bytes |
+| field_name | Associated field (when applicable) |
+
+### Use Cases
+
+- **Index size analysis**: Identify which components consume the most storage
+- **Schema optimization**: Find fields that may benefit from different indexing strategies (e.g., switching from `position` to `basic` index record option)
+- **Capacity planning**: Estimate storage requirements based on component breakdowns
+- **Debugging**: Diagnose indexing issues by examining component-level details
+
+### Example Analysis
+
+```sql
+-- Find largest components by type
+SELECT component_type, SUM(size_bytes) as total_bytes
+FROM (
+  DESCRIBE INDEXTABLES COMPONENT SIZES 's3://bucket/logs'
+)
+GROUP BY component_type
+ORDER BY total_bytes DESC;
+```
+
 ## DESCRIBE TRANSACTION LOG
 
 View the contents of a table's transaction log:

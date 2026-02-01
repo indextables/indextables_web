@@ -70,7 +70,41 @@ Settings for transaction log management, checkpointing, and caching.
 | `spark.indextables.cache.metadata.ttl` | 30 | Metadata cache TTL in minutes |
 | `spark.indextables.cache.metadata.size` | 100 | Maximum metadata cache entries |
 
-### Retention
+### State Format (Avro)
+
+Settings for the high-performance Avro-based transaction log state format.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.state.format` | avro | State format: "avro" or "json" |
+| `spark.indextables.state.compression` | zstd | Compression: "zstd", "snappy", or "none" |
+| `spark.indextables.state.compressionLevel` | 3 | Zstd compression level (1-22) |
+| `spark.indextables.state.entriesPerManifest` | 50000 | Maximum entries per manifest file |
+
+### State Compaction
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.state.compaction.tombstoneThreshold` | 0.10 | Compact when tombstones exceed 10% |
+| `spark.indextables.state.compaction.maxManifests` | 20 | Compact when manifest count exceeds limit |
+| `spark.indextables.state.compaction.afterMerge` | true | Auto-compact after MERGE SPLITS |
+
+### State Retention
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.state.retention.versions` | 2 | Keep N old state versions |
+| `spark.indextables.state.retention.hours` | 168 | State file retention (7 days) |
+
+### Concurrent Write Retry
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.state.retry.maxAttempts` | 10 | Retry attempts on concurrent write conflict |
+| `spark.indextables.state.retry.baseDelayMs` | 100 | Initial backoff delay in milliseconds |
+| `spark.indextables.state.retry.maxDelayMs` | 5000 | Maximum backoff delay in milliseconds |
+
+### Legacy Retention
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -87,6 +121,23 @@ Settings that control read operations and query execution.
 | `spark.indextables.read.defaultLimit` | 250 | Default result limit when no LIMIT clause |
 | `spark.indextables.docBatch.enabled` | true | Enable batch document retrieval |
 | `spark.indextables.docBatch.maxSize` | 1000 | Documents per batch (1-10000) |
+
+### Read Task Optimization
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.read.splitsPerTask` | auto | Splits per task: "auto" for dynamic selection, or fixed numeric value |
+| `spark.indextables.read.maxSplitsPerTask` | 8 | Maximum splits per task when using auto mode |
+| `spark.indextables.read.aggregate.splitsPerTask` | (fallback) | Override for aggregate queries |
+| `spark.indextables.read.aggregate.maxSplitsPerTask` | (fallback) | Max splits for aggregate queries |
+
+:::note Auto Mode Behavior
+With `auto`, the system dynamically adjusts split batching based on cluster size:
+- **Small tables** (splits ≤ 2× default parallelism): Uses 1 split per task for maximum parallelism
+- **Large tables**: Batches splits to maintain ~4× over-subscription, capped at `maxSplitsPerTask`
+
+Set to a fixed number (e.g., `"1"`) to disable auto mode.
+:::
 
 ### Prescan Filtering
 
@@ -107,6 +158,12 @@ Settings that control which filter operations are pushed down to the index.
 | `spark.indextables.filter.stringStartsWith.pushdown` | false | Enable prefix matching (most efficient) |
 | `spark.indextables.filter.stringEndsWith.pushdown` | false | Enable suffix matching (less efficient) |
 | `spark.indextables.filter.stringContains.pushdown` | false | Enable substring matching (least efficient) |
+
+### IndexQuery Safety
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.indexquery.indexall.maxUnqualifiedFields` | 10 | Max fields for unqualified `_indexall indexquery`. Set to 0 to disable. |
 
 :::note String Pattern Performance
 - **startsWith**: Most efficient - uses sorted index terms
@@ -211,7 +268,7 @@ Settings that control how fields are indexed.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `spark.indextables.indexing.typemap.<field>` | string | Field indexing type: `string`, `text`, `json` |
+| `spark.indextables.indexing.typemap.<field>` | string | Field indexing type: `string`, `text`, `json`, `ip` |
 | `spark.indextables.indexing.fastfields` | (auto) | Comma-separated list of fast fields |
 | `spark.indextables.indexing.storeonlyfields` | (empty) | Fields stored but not indexed |
 | `spark.indextables.indexing.indexonlyfields` | (empty) | Fields indexed but not stored |
@@ -219,6 +276,28 @@ Settings that control how fields are indexed.
 | `spark.indextables.indexing.json.mode` | full | JSON indexing mode |
 | `spark.indextables.indexing.text.indexRecordOption` | position | Index record option |
 | `spark.indextables.indexing.indexrecordoption.<field>` | - | Per-field index record option |
+
+### Text Token Length
+
+Control the maximum token length for text fields. Tokens exceeding this limit are filtered out (not truncated).
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.indexing.text.maxTokenLength` | 255 | Global default token length limit |
+| `spark.indextables.indexing.tokenLength.<length>` | - | List-based config: `spark.indextables.indexing.tokenLength.255: "content,body"` |
+| `spark.indextables.indexing.tokenLength.<field>` | - | Per-field config: `spark.indextables.indexing.tokenLength.content: "255"` |
+
+**Named constants:**
+- `tantivy_max` = 65,530 (maximum Tantivy supports, use for URLs/base64)
+- `default` = 255 (Quickwit-compatible)
+- `legacy` = 40 (original tantivy4java default)
+
+:::warning Breaking Change (v0.4.5)
+The default token length changed from 40 to 255 bytes. Tokens between 41-255 bytes that were previously filtered out will now be indexed. To maintain previous behavior, set:
+```scala
+spark.conf.set("spark.indextables.indexing.text.maxTokenLength", "legacy")
+```
+:::
 
 ## Merge Settings
 
