@@ -14,11 +14,18 @@ The transaction log is stored in the `_transaction_log/` directory and records a
 ```
 s3://bucket/my_index/
   _transaction_log/
-    _state/           # Avro state files (v0.4.5+)
-    00000000000000000001.json
+    00000000000000000001.json           # Version files (JSON)
     00000000000000000002.json
-    00000000000000000003.checkpoint.json
+    ...
+    manifests/                          # Shared Avro manifest files
+      manifest-a1b2c3d4.avro
+      manifest-e5f6g7h8.avro
+    state-v00000000000000000100/        # State snapshot directory
+      _manifest.json                    # References to manifest files
+    _last_checkpoint                    # Pointer to latest state
 ```
+
+**Version files** record individual transactions in JSON format. **State directories** contain snapshots that reference shared Avro manifests for efficient reads. The `manifests/` directory holds compressed Avro files shared across state versions.
 
 ## State Format
 
@@ -59,51 +66,49 @@ CHECKPOINT INDEXTABLES 's3://bucket/my_table';
 
 The upgrade is automatic and preserves all data. Old readers can still access the table via JSON fallback until they upgrade.
 
-## Transaction Types
+## Manifest Structure
 
-### AddAction
+### State Manifest (`_manifest.json`)
 
-Records a new split being added:
+Each state directory contains a JSON manifest that tracks:
 
-```json
-{
-  "add": {
-    "path": "partition=2024-01-01/abc123.split",
-    "size": 104857600,
-    "stats": { "numRecords": 10000 }
-  }
-}
-```
+- Number of file entries across all referenced manifests
+- Total bytes of data
+- Creation timestamp and protocol version
+- Count of tombstone entries (removed files)
+- References to Avro manifest files in the shared `manifests/` directory
 
-### RemoveAction
+### Avro Manifest Files (`manifest-*.avro`)
 
-Records a split being logically deleted:
+Avro manifests store file entries with full metadata for efficient querying:
 
-```json
-{
-  "remove": {
-    "path": "partition=2024-01-01/abc123.split",
-    "deletionTimestamp": 1704067200000
-  }
-}
-```
+| Field | Description |
+|-------|-------------|
+| `path` | Split file path relative to table root |
+| `partitionValues` | Map of partition column values (enables partition pruning) |
+| `size` | File size in bytes |
+| `numRecords` | Document count in split |
+| `minValues` / `maxValues` | Column statistics for data skipping |
+| `addedAtVersion` | Transaction version when file was added |
+| `addedAtTimestamp` | Timestamp when file was added |
+| `tombstone` | True if file has been logically deleted |
+
+Each manifest file holds up to 50,000 entries (configurable via `spark.indextables.state.entriesPerManifest`). Manifests are shared across state versions—new writes only create manifests for new files, dramatically reducing I/O for large tables.
 
 ## Checkpoints
 
-Checkpoints consolidate transaction log state for faster reads:
+Checkpoints compact multiple manifests into a single file for faster reads:
 
 ```scala
-// Configure checkpoint interval
+// Configure automatic checkpoint interval
 spark.conf.set("spark.indextables.checkpoint.enabled", "true")
 spark.conf.set("spark.indextables.checkpoint.interval", "10")
 ```
 
-## Compression
+Checkpoints are created automatically every N transactions, or manually via SQL:
 
-Transaction logs are GZIP compressed by default (60-70% size reduction):
-
-```scala
-spark.conf.set("spark.indextables.transaction.compression.enabled", "true")
+```sql
+CHECKPOINT INDEXTABLES 's3://bucket/my_table';
 ```
 
 ## Compaction
