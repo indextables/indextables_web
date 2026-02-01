@@ -49,8 +49,10 @@ Splits are stored with UUID-based names:
 ```
 s3://bucket/my_index/
   _transaction_log/
-    00000000000000000001.json
-    00000000000000000002.json
+    manifests/
+      manifest-a1b2c3d4.avro
+    state-v.../
+      _manifest.json
   partition=2024-01-01/
     abc123-def456-789.split
     xyz789-abc123-456.split

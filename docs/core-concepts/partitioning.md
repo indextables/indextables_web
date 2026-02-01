@@ -20,6 +20,9 @@ Creates structure:
 ```
 s3://bucket/logs/
   _transaction_log/
+    manifests/
+    state-v.../
+      _manifest.json
   date=2024-01-01/region=us-east/
     abc123.split
   date=2024-01-01/region=eu-west/
