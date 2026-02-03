@@ -43,7 +43,7 @@ Together, these features established IndexTables as a compelling open-source sol
 With 0.4.5, the focus shifts from foundation to refinement—polishing performance, strengthening reliability, and improving the production experience.
 
 ### Scalability & Performance
-- Reduced metadata scan times by up to 95% on tables with thousands of splits
+- Reduced metadata scan times by up to 95% on tables with hundreds of thousands of splits
 - Improved memory efficiency during large batch indexing operations
 
 ### Usability & Developer Experience
