@@ -8,7 +8,7 @@ date: 2026-02-02
 
 We're excited to announce the release of **IndexTables 0.4.5**, a milestone update that advances performance, stability, usability, and cloud-scale readiness for large-scale data workloads.
 
-Since the 0.4.0 line, the IndexTables project has stayed focused on a simple goal: **bring blazing-fast full-text search and analytics to Spark**, running entirely inside your existing Spark cluster—no external services or additional infrastructure required. The result is dramatically faster search and aggregation compared to traditional table formats, with **100×–1000× speedups** observed in real-world POCs for interactive log analytics and cybersecurity workloads.
+Since the 0.4.0 line, the IndexTables project has stayed focused on a simple goal: **bring blazing-fast full-text search and analytics to Spark**, running entirely inside your existing Spark cluster—no external services or additional infrastructure required. The result is dramatically faster search and aggregation compared to traditional table formats, with **100×–1000× speedups** observed in real-world applications for interactive log analytics and cybersecurity workloads.
 
 But performance is only the starting point.
 
