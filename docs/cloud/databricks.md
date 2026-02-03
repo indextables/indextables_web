@@ -27,8 +27,7 @@ cp /Volumes/my_catalog/my_schema/artifacts/indextables_spark-0.4.5_spark_3.5.3-l
 
 | Component | Version |
 |-----------|---------|
-| Apache Spark | 3.5.3 |
-| Java | 11 or later |
+| Databricks Runtime | 15.4 LTS or 16.4 LTS |
 | Scala | 2.12 |
 
 ## Register SQL Extensions
@@ -50,6 +49,7 @@ When `/local_disk0` is detected, these settings are automatically configured:
 If using Unity Catalog External Locations to access S3 data, configure the Unity Catalog credential provider. We recommend setting these as cluster Spark properties:
 
 ```properties
+spark.sql.extensions io.indextables.spark.extensions.IndexTables4SparkExtensions
 spark.indextables.databricks.workspaceUrl https://<workspace>.cloud.databricks.com
 spark.indextables.databricks.apiToken <your-token>
 spark.indextables.aws.credentialsProviderClass io.indextables.spark.auth.unity.UnityCatalogAWSCredentialProvider
@@ -80,6 +80,10 @@ See the [generateTemporaryPathCredentials API](https://docs.databricks.com/api/w
 Credentials are resolved on the driver and broadcast to executors — no network calls from executors to Databricks.
 
 ## Recommended Cluster Configuration
+
+:::note Photon
+We recommend disabling Photon as it doesn't accelerate IndexTables workloads.
+:::
 
 For all clusters, set the following to ensure caching and prewarming works properly:
 
@@ -120,6 +124,3 @@ spark.conf.set("spark.indextables.indexWriter.heapSize", "200M")
 spark.conf.set("spark.indextables.s3.maxConcurrency", "8")
 ```
 
-## Photon Compatibility
-
-IndexTables works with Photon-enabled clusters. Aggregations and filters are pushed down before Photon processes results.
