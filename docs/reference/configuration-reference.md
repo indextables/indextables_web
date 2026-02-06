@@ -39,6 +39,18 @@ Settings that control how data is indexed during write operations.
 | `spark.indextables.autoSize.targetSplitSize` | 100M | Target split size (supports "100M", "1G" syntax) |
 | `spark.indextables.autoSize.inputRowCount` | estimated | Explicit row count for V2 API |
 
+### Shuffle-Based Write Optimization
+
+Produces consistently-sized splits by requesting a shuffle via Spark's `RequiresDistributionAndOrdering` interface and letting AQE coalesce partitions. See [Optimized Writes](/docs/advanced/optimize-write) for full details.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.write.optimizeWrite.enabled` | false | Enable shuffle-based write optimization |
+| `spark.indextables.write.optimizeWrite.targetSplitSize` | 1G | Target on-disk split size (supports "512M", "1G", "2G" syntax) |
+| `spark.indextables.write.optimizeWrite.distributionMode` | hash | Distribution mode: "hash" or "none" |
+| `spark.indextables.write.optimizeWrite.samplingRatio` | 1.1 | Split-to-shuffle-data ratio for size estimation |
+| `spark.indextables.write.optimizeWrite.minRowsForEstimation` | 10000 | Minimum rows for history-based estimation |
+
 ## Transaction Log
 
 Settings for transaction log management, checkpointing, and caching.
