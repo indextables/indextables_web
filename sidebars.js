@@ -59,6 +59,7 @@ const sidebars = {
       items: [
         'advanced/json-fields',
         'advanced/l2-disk-cache',
+        'advanced/optimize-write',
         'advanced/merge-on-write',
         'advanced/purge-on-write',
       ],
