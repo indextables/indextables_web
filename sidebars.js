@@ -66,6 +66,13 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: 'Features',
+      items: [
+        'features/companion-mode',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Cloud Deployment',
       items: [
         'cloud/databricks',

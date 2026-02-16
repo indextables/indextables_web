@@ -11,14 +11,14 @@ IndexTables is optimized for Databricks with automatic detection of local NVMe s
 
 1. Download the shaded JAR from Maven Central:
    ```
-   https://repo1.maven.org/maven2/io/indextables/indextables_spark/0.4.6_spark_3.5.3/indextables_spark-0.4.6_spark_3.5.3-linux-x86_64-shaded.jar
+   https://repo1.maven.org/maven2/io/indextables/indextables_spark/0.5.0_spark_3.5.3/indextables_spark-0.5.0_spark_3.5.3-linux-x86_64-shaded.jar
    ```
 2. Upload it to a Unity Catalog volume (e.g., `/Volumes/my_catalog/my_schema/artifacts/`)
 3. Create an init script that copies the JAR to the Databricks jars directory:
 
 ```bash
 #!/bin/sh
-cp /Volumes/my_catalog/my_schema/artifacts/indextables_spark-0.4.6_spark_3.5.3-linux-x86_64-shaded.jar /databricks/jars
+cp /Volumes/my_catalog/my_schema/artifacts/indextables_spark-0.5.0_spark_3.5.3-linux-x86_64-shaded.jar /databricks/jars
 ```
 
 4. Upload the init script to your volume and configure it in your cluster settings under **Advanced Options > Init Scripts**
@@ -115,6 +115,23 @@ For write/indexing workloads, compute-optimized instances work well:
 ```properties
 spark.executor.memory 16348m
 ```
+
+## Companion Mode with Unity Catalog
+
+[Companion Mode](/docs/features/companion-mode) on Databricks supports Unity Catalog table name resolution for Delta tables. Pass a table name instead of a storage path, and IndexTables resolves the storage location and credentials automatically:
+
+```sql
+BUILD INDEXTABLES COMPANION FOR DELTA 'schema.events'
+  CATALOG 'my_catalog'
+  INDEXING MODES ('message':'text', 'src_ip':'ipaddress')
+  AT LOCATION 's3://warehouse/companion/events'
+```
+
+This requires the Unity Catalog credential provider to be configured (see [Unity Catalog Integration](#unity-catalog-integration) above).
+
+:::note Scheduler Mode
+Companion mode runs sync batches as concurrent Spark jobs. For this to work correctly, set `spark.scheduler.mode=FAIR` in your cluster configuration. This is the default on Databricks, but verify it is set if companion batches appear to run sequentially.
+:::
 
 ## Performance Settings
 
