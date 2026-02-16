@@ -367,7 +367,7 @@ Advanced settings for protocol version management.
 
 ## Companion Mode
 
-Settings for the `BUILD INDEXTABLES COMPANION` command. See [Companion Mode](/docs/features/companion-mode) for full details.
+Settings for the `BUILD INDEXTABLES COMPANION` command. See [Companion Mode](/docs/core-concepts/companion-mode) for full details.
 
 | Setting | Default | Description |
 |---------|---------|-------------|

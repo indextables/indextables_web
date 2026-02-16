@@ -118,7 +118,7 @@ spark.executor.memory 16348m
 
 ## Companion Mode with Unity Catalog
 
-[Companion Mode](/docs/features/companion-mode) on Databricks supports Unity Catalog table name resolution for Delta tables. Pass a table name instead of a storage path, and IndexTables resolves the storage location and credentials automatically:
+[Companion Mode](/docs/core-concepts/companion-mode) on Databricks supports Unity Catalog table name resolution for Delta tables. Pass a table name instead of a storage path, and IndexTables resolves the storage location and credentials automatically:
 
 ```sql
 BUILD INDEXTABLES COMPANION FOR DELTA 'schema.events'
