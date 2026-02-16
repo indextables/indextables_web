@@ -183,7 +183,7 @@ WAIT FOR INDEXTABLES PREWARM JOBS TIMEOUT 600;
 
 ## Companion Mode Segments
 
-When prewarming [companion mode](/docs/features/companion-mode) indexes, two additional segment types are available for parquet-backed data:
+When prewarming [companion mode](/docs/core-concepts/companion-mode) indexes, two additional segment types are available for parquet-backed data:
 
 ### Parquet Fast Fields
 

@@ -19,6 +19,7 @@ const sidebars = {
         'core-concepts/transaction-log',
         'core-concepts/field-types',
         'core-concepts/partitioning',
+        'core-concepts/companion-mode',
       ],
     },
     {
@@ -62,13 +63,6 @@ const sidebars = {
         'advanced/optimize-write',
         'advanced/merge-on-write',
         'advanced/purge-on-write',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Features',
-      items: [
-        'features/companion-mode',
       ],
     },
     {

@@ -173,7 +173,7 @@ Companion Mode ships in IndexTables 0.5.0 with support for **Delta Lake, Apache 
 
 If you’re already using IndexTables, Companion Mode is a drop-in option. Existing standalone tables continue to work unchanged — Companion Mode is simply a better fit when you want search **without** data duplication.
 
-Get started with the [Companion Mode documentation](/docs/features/companion-mode) or the [Quickstart](/docs/getting-started/quickstart).
+Get started with the [Companion Mode documentation](/docs/core-concepts/companion-mode) or the [Quickstart](/docs/getting-started/quickstart).
 
 ---
 

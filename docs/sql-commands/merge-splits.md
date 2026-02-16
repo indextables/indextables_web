@@ -65,7 +65,7 @@ spark.conf.set("spark.indextables.merge.maxSourceSplitsPerMerge", "1000")
 
 ## Companion Mode
 
-MERGE SPLITS works with [companion mode](/docs/features/companion-mode) splits and preserves companion metadata during the merge:
+MERGE SPLITS works with [companion mode](/docs/core-concepts/companion-mode) splits and preserves companion metadata during the merge:
 
 - **`companionSourceFiles`** — concatenated from all source splits
 - **`companionDeltaVersion`** / **`source_version`** — the maximum value is retained
