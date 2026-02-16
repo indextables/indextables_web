@@ -1,7 +1,7 @@
 ---
 slug: companion-mode-0.5.0
 title: "Search Is an Index, Not a Copy: Introducing Companion Mode in IndexTables 0.5.0"
-authors: [indextables]
+authors: [scott]
 tags: [release, companion-mode, delta-lake, iceberg, parquet]
 date: 2026-02-16
 ---
