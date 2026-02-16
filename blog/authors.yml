@@ -3,3 +3,8 @@ indextables:
   title: Core Maintainers
   url: https://github.com/indextables
   image_url: https://github.com/indextables.png
+
+scott:
+  name: Scott Schenkein
+  url: https://github.com/schenksj
+  image_url: https://github.com/schenksj.png
