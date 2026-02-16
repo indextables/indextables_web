@@ -181,6 +181,40 @@ DESCRIBE INDEXTABLES PREWARM JOBS;
 WAIT FOR INDEXTABLES PREWARM JOBS TIMEOUT 600;
 ```
 
+## Companion Mode Segments
+
+When prewarming [companion mode](/docs/features/companion-mode) indexes, two additional segment types are available for parquet-backed data:
+
+### Parquet Fast Fields
+
+For companion splits using `HYBRID` or `PARQUET_ONLY` fast field mode, prewarm parquet fast field data to accelerate aggregations:
+
+```sql
+PREWARM INDEXTABLES CACHE 's3://warehouse/events_index'
+  FOR SEGMENTS (TERM_DICT, POSTINGS, FAST_FIELD, PARQUET_FAST_FIELDS);
+```
+
+:::tip Auto-Detection
+When `FAST_FIELD` is requested on companion splits with `HYBRID` or `PARQUET_ONLY` mode, parquet fast fields are automatically included — you don't need to specify `PARQUET_FAST_FIELDS` explicitly.
+:::
+
+### Parquet Columns
+
+For document retrieval workloads, prewarm the parquet column data:
+
+```sql
+PREWARM INDEXTABLES CACHE 's3://warehouse/events_index'
+  FOR SEGMENTS (TERM_DICT, POSTINGS, PARQUET_COLUMNS);
+```
+
+### Full Companion Prewarm
+
+```sql
+PREWARM INDEXTABLES CACHE 's3://warehouse/events_index'
+  FOR SEGMENTS (TERM_DICT, POSTINGS, FAST_FIELD, PARQUET_FAST_FIELDS, PARQUET_COLUMNS)
+  ON FIELDS (timestamp, status, message);
+```
+
 ## Monitor Disk Cache Usage
 
 Check how much disk space your cache is using:
@@ -201,6 +235,8 @@ This shows cache size, hit rate, and available capacity per executor.
 | FIELD_NORM, FIELDNORM | Field norms for scoring | Range queries, aggregations |
 | POSITIONS, POSITION_LISTS | Term positions | Phrase queries |
 | DOC_STORE, STORE | Document storage | Retrieving field values |
+| PARQUET_FAST_FIELDS, PARQUET_FAST | Parquet fast field data | Aggregations on companion splits |
+| PARQUET_COLUMNS, PARQUET_COLS | Parquet column data | Document retrieval on companion splits |
 
 **Default segments**: TERM_DICT, POSTINGS
 

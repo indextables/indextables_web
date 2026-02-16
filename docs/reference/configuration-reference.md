@@ -47,7 +47,8 @@ Produces consistently-sized splits by requesting a shuffle via Spark's `Requires
 |---------|---------|-------------|
 | `spark.indextables.write.optimizeWrite.enabled` | false | Enable shuffle-based write optimization |
 | `spark.indextables.write.optimizeWrite.targetSplitSize` | 1G | Target on-disk split size (supports "512M", "1G", "2G" syntax) |
-| `spark.indextables.write.optimizeWrite.distributionMode` | hash | Distribution mode: "hash" or "none" |
+| `spark.indextables.write.optimizeWrite.distributionMode` | hash | Distribution mode: "hash", "balanced", or "none" |
+| `spark.indextables.write.optimizeWrite.maxSplitSize` | 4G | Maximum split size before rolling (balanced mode only) |
 | `spark.indextables.write.optimizeWrite.samplingRatio` | 1.1 | Split-to-shuffle-data ratio for size estimation |
 | `spark.indextables.write.optimizeWrite.minRowsForEstimation` | 10000 | Minimum rows for history-based estimation |
 
@@ -363,6 +364,32 @@ Advanced settings for protocol version management.
 | `spark.indextables.protocol.autoUpgrade` | false | Automatically upgrade protocol version |
 | `spark.indextables.protocol.enforceReaderVersion` | true | Enforce minimum reader version |
 | `spark.indextables.protocol.enforceWriterVersion` | true | Enforce minimum writer version |
+
+## Companion Mode
+
+Settings for the `BUILD INDEXTABLES COMPANION` command. See [Companion Mode](/docs/features/companion-mode) for full details.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.companion.writerHeapSize` | 1G | Tantivy writer heap size per executor task |
+| `spark.indextables.companion.readerBatchSize` | 8192 | Parquet reader batch size |
+| `spark.indextables.companion.sync.batchSize` | defaultParallelism | Tasks per Spark job |
+| `spark.indextables.companion.sync.maxConcurrentBatches` | 6 | Maximum concurrent Spark jobs during sync |
+| `spark.indextables.companion.schedulerPool` | indextables-companion | Spark scheduler pool name for batch parallelism |
+
+## Iceberg
+
+Settings for Apache Iceberg catalog integration in companion mode.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.iceberg.catalogType` | - | Catalog type: `rest`, `glue`, or `hive` |
+| `spark.indextables.iceberg.uri` | - | Catalog URI |
+| `spark.indextables.iceberg.warehouse` | - | Warehouse location |
+| `spark.indextables.iceberg.token` | - | Authentication token |
+| `spark.indextables.iceberg.credential` | - | Authentication credential |
+| `spark.indextables.iceberg.s3Endpoint` | - | S3-compatible endpoint (e.g., MinIO) |
+| `spark.indextables.iceberg.s3PathStyleAccess` | false | Enable S3 path-style access |
 
 ## Skipped Files Tracking
 

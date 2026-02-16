@@ -63,6 +63,16 @@ MERGE SPLITS 's3://bucket/my_index'
 spark.conf.set("spark.indextables.merge.maxSourceSplitsPerMerge", "1000")
 ```
 
+## Companion Mode
+
+MERGE SPLITS works with [companion mode](/docs/features/companion-mode) splits and preserves companion metadata during the merge:
+
+- **`companionSourceFiles`** — concatenated from all source splits
+- **`companionDeltaVersion`** / **`source_version`** — the maximum value is retained
+- **`companionFastFieldMode`** — preserved (must be consistent across merged splits)
+
+No special syntax is needed — companion metadata is handled automatically.
+
 ## When to Use
 
 - After many small writes
