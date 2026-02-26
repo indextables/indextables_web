@@ -217,6 +217,7 @@ Settings for the L2 disk cache on NVMe storage.
 | `spark.indextables.cache.disk.path` | auto | Cache directory path |
 | `spark.indextables.cache.disk.maxSize` | 0 (auto) | Maximum cache size (0 = auto 2/3 of disk) |
 | `spark.indextables.cache.disk.manifestSyncInterval` | 30 | Seconds between manifest writes |
+| `spark.indextables.cache.coalesceMaxGap` | 512K | Maximum gap between parquet byte ranges to coalesce into a single fetch. Lower values reduce over-fetch for narrow projections on wide tables. |
 
 ### In-Memory Cache
 

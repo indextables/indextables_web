@@ -63,6 +63,10 @@ MERGE SPLITS 's3://bucket/my_index'
 spark.conf.set("spark.indextables.merge.maxSourceSplitsPerMerge", "1000")
 ```
 
+:::note Temp Directory Fallback
+When `spark.indextables.merge.tempDirectoryPath` points to an invalid or inaccessible path, MERGE SPLITS automatically falls back to the JVM system temp directory instead of failing.
+:::
+
 ## Companion Mode
 
 MERGE SPLITS works with [companion mode](/docs/core-concepts/companion-mode) splits and preserves companion metadata during the merge:
