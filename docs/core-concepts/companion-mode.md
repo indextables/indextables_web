@@ -35,6 +35,7 @@ Companion Mode creates **index-only splits** that reference the parquet files al
 BUILD INDEXTABLES COMPANION FOR DELTA '<storage_path>'
   [INDEXING MODES ('<field>':'<mode>' [, ...])]
   [FASTFIELDS MODE {HYBRID | PARQUET_ONLY | DISABLED}]
+  [HASHED FASTFIELDS {INCLUDE | EXCLUDE} ('<field>' [, ...])]
   [TARGET INPUT SIZE <size>]
   [WRITER HEAP SIZE <size>]
   [FROM VERSION <number>]
@@ -50,6 +51,7 @@ BUILD INDEXTABLES COMPANION FOR DELTA '<schema.table>'
   CATALOG '<catalog_name>' [TYPE '<catalog_type>']
   [INDEXING MODES ('<field>':'<mode>' [, ...])]
   [FASTFIELDS MODE {HYBRID | PARQUET_ONLY | DISABLED}]
+  [HASHED FASTFIELDS {INCLUDE | EXCLUDE} ('<field>' [, ...])]
   [TARGET INPUT SIZE <size>]
   [WRITER HEAP SIZE <size>]
   [FROM VERSION <number>]
@@ -66,6 +68,7 @@ BUILD INDEXTABLES COMPANION FOR ICEBERG '<namespace.table_name>'
   [WAREHOUSE '<warehouse_path>']
   [INDEXING MODES ('<field>':'<mode>' [, ...])]
   [FASTFIELDS MODE {HYBRID | PARQUET_ONLY | DISABLED}]
+  [HASHED FASTFIELDS {INCLUDE | EXCLUDE} ('<field>' [, ...])]
   [TARGET INPUT SIZE <size>]
   [WRITER HEAP SIZE <size>]
   [FROM SNAPSHOT <snapshot_id>]
@@ -81,6 +84,7 @@ BUILD INDEXTABLES COMPANION FOR PARQUET '<parquet_directory>'
   [SCHEMA SOURCE '<parquet_file>']
   [INDEXING MODES ('<field>':'<mode>' [, ...])]
   [FASTFIELDS MODE {HYBRID | PARQUET_ONLY | DISABLED}]
+  [HASHED FASTFIELDS {INCLUDE | EXCLUDE} ('<field>' [, ...])]
   [TARGET INPUT SIZE <size>]
   [WRITER HEAP SIZE <size>]
   [WHERE <partition_predicates>]
@@ -104,6 +108,7 @@ BUILD INDEXTABLES COMPANION FOR PARQUET '<parquet_directory>'
 |-----------|---------|-------------|
 | `INDEXING MODES` | All fields as `string` | Per-field indexing mode: `'field':'mode'` pairs |
 | `FASTFIELDS MODE` | `HYBRID` | Fast field strategy: `HYBRID`, `PARQUET_ONLY`, or `DISABLED` |
+| `HASHED FASTFIELDS` | all eligible | Control which string fields get U64 hashed fast fields for aggregations. Use `INCLUDE` to whitelist or `EXCLUDE` to blacklist specific fields. |
 | `TARGET INPUT SIZE` | `2G` | Maximum cumulative parquet file size per companion split |
 | `WRITER HEAP SIZE` | `1G` | Tantivy writer memory budget per executor task |
 | `FROM VERSION` | — | Start sync from a specific Delta version (Delta only) |
@@ -132,6 +137,67 @@ INDEXING MODES ('message':'text', 'src_ip':'ipaddress', 'severity':'string', 'pa
 ```
 
 Fields not listed in `INDEXING MODES` default to `string`.
+
+### Compact String Indexing Modes
+
+For high-cardinality string fields (trace IDs, UUIDs, request IDs), standard `string` indexing can produce large term dictionaries. Compact string indexing modes reduce index size by hashing values or stripping high-cardinality tokens from text.
+
+| Mode | What Gets Indexed | Query Support |
+|------|-------------------|---------------|
+| `exact_only` | xxHash64 of the raw string (U64 field) | Term queries only (search values are auto-hashed) |
+| `text_uuid_exactonly` | Tokenized text with UUIDs stripped + companion U64 hash per UUID | Full-text on text, exact match on UUIDs |
+| `text_uuid_strip` | Tokenized text with UUIDs stripped (UUIDs discarded) | Full-text only |
+| `text_custom_exactonly` | Tokenized text with regex matches stripped + companion U64 hash per match | Full-text on text, exact match on regex pattern |
+| `text_custom_strip` | Tokenized text with regex matches stripped (matches discarded) | Full-text only |
+
+```sql
+INDEXING MODES (
+  'trace_id':'exact_only',
+  'message':'text_uuid_exactonly',
+  'error_log':'text_custom_exactonly(ERR-\\d{4})',
+  'notes':'text_uuid_strip'
+)
+```
+
+#### Query Behavior
+
+Queries on compact string fields are transparently rewritten at search time:
+
+- **Term queries** on `exact_only` fields automatically hash the search value before matching
+- **Term queries** on `*_exactonly` fields redirect UUID/pattern matches to the companion hash field
+- **Full-text queries** (`parseQuery()`) on `exact_only` fields are converted to hashed term queries
+- **Full-text queries** on `*_exactonly` fields work normally on the stripped text, with UUID/pattern matches redirected to the companion hash
+
+No changes to your query code are needed — rewriting is handled internally.
+
+#### Query Limitations
+
+Wildcard, regex, and phrase prefix queries are **not supported** on `exact_only` fields because only the hash is stored, not the original string. These queries return a clear error:
+
+```
+Cannot use wildcard query on exact_only field 'trace_id'...
+```
+
+Range queries on `exact_only` fields are handled by Spark as a post-filter on the underlying parquet data rather than being pushed down to the index.
+
+#### Examples
+
+```sql
+-- High-cardinality trace IDs: hash-only indexing (smallest index size)
+BUILD INDEXTABLES COMPANION FOR DELTA 's3://warehouse/traces'
+  INDEXING MODES ('trace_id':'exact_only', 'span_id':'exact_only', 'message':'text')
+  AT LOCATION 's3://warehouse/traces_index'
+
+-- Log messages with UUIDs: full-text search + exact UUID lookup
+BUILD INDEXTABLES COMPANION FOR DELTA 's3://warehouse/logs'
+  INDEXING MODES ('message':'text_uuid_exactonly', 'request_id':'exact_only')
+  AT LOCATION 's3://warehouse/logs_index'
+
+-- Custom pattern: extract and hash error codes from log lines
+BUILD INDEXTABLES COMPANION FOR DELTA 's3://warehouse/errors'
+  INDEXING MODES ('error_log':'text_custom_exactonly(ERR-\\d{4})')
+  AT LOCATION 's3://warehouse/errors_index'
+```
 
 ## Fast Field Modes
 
@@ -348,6 +414,21 @@ BUILD INDEXTABLES COMPANION FOR DELTA 's3://warehouse/events'
   INDEXING MODES ('message':'text', 'src_ip':'ipaddress')
   AT LOCATION 's3://warehouse/events_index'
   DRY RUN
+```
+
+### Hashed Fastfields
+
+```sql
+-- Only generate hashed fast fields for specific columns
+BUILD INDEXTABLES COMPANION FOR PARQUET 's3://logs/events/'
+  HASHED FASTFIELDS INCLUDE ('title', 'category')
+  AT LOCATION 's3://warehouse/companion/events'
+
+-- Exclude large or irrelevant string fields from hashed fast fields
+BUILD INDEXTABLES COMPANION FOR DELTA 's3://warehouse/documents'
+  HASHED FASTFIELDS EXCLUDE ('raw_html', 'full_body')
+  INDEXING MODES ('title':'text', 'summary':'text')
+  AT LOCATION 's3://warehouse/companion/documents'
 ```
 
 ### Custom Sizing

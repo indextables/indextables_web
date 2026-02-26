@@ -37,6 +37,17 @@ DESCRIBE INDEXTABLES DISK CACHE;
 FLUSH INDEXTABLES DISK CACHE;
 ```
 
+## Parquet Coalesce Max Gap
+
+Controls how aggressively nearby parquet byte ranges are merged into fewer storage requests. The default 512KB gap works well for most workloads, but narrow projections on wide tables (e.g., selecting 2 columns from a 50-column table) may benefit from a smaller value.
+
+```scala
+// Reduce gap to 64KB for narrow projections on wide tables
+spark.conf.set("spark.indextables.cache.coalesceMaxGap", "64K")
+```
+
+Accepts human-readable size strings: `"64K"`, `"512K"`, `"1M"`.
+
 ## Cache Directory
 
 ```scala
