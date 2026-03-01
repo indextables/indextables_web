@@ -23,6 +23,15 @@ spark.conf.set("spark.indextables.cache.disk.maxSize", "100G")
 
 // Manifest sync interval
 spark.conf.set("spark.indextables.cache.disk.manifestSyncInterval", "30")
+
+// Write queue mode: "size" (byte-based backpressure) or "fragment" (bounded slots)
+spark.conf.set("spark.indextables.cache.disk.writeQueue.mode", "size")
+
+// Write queue capacity (1G default for size mode)
+spark.conf.set("spark.indextables.cache.disk.writeQueue.capacity", "1G")
+
+// Drop query-path writes instead of blocking when full
+spark.conf.set("spark.indextables.cache.disk.dropWritesWhenFull", "true")
 ```
 
 ### Monitor Disk Cache

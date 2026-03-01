@@ -40,6 +40,7 @@ BUILD INDEXTABLES COMPANION FOR DELTA '<storage_path>'
   [WRITER HEAP SIZE <size>]
   [FROM VERSION <number>]
   [WHERE <partition_predicates>]
+  [INVALIDATE ALL PARTITIONS]
   AT LOCATION '<destination_path>'
   [DRY RUN]
 ```
@@ -56,6 +57,7 @@ BUILD INDEXTABLES COMPANION FOR DELTA '<schema.table>'
   [WRITER HEAP SIZE <size>]
   [FROM VERSION <number>]
   [WHERE <partition_predicates>]
+  [INVALIDATE ALL PARTITIONS]
   AT LOCATION '<destination_path>'
   [DRY RUN]
 ```
@@ -73,6 +75,7 @@ BUILD INDEXTABLES COMPANION FOR ICEBERG '<namespace.table_name>'
   [WRITER HEAP SIZE <size>]
   [FROM SNAPSHOT <snapshot_id>]
   [WHERE <partition_predicates>]
+  [INVALIDATE ALL PARTITIONS]
   AT LOCATION '<destination_path>'
   [DRY RUN]
 ```
@@ -88,6 +91,7 @@ BUILD INDEXTABLES COMPANION FOR PARQUET '<parquet_directory>'
   [TARGET INPUT SIZE <size>]
   [WRITER HEAP SIZE <size>]
   [WHERE <partition_predicates>]
+  [INVALIDATE ALL PARTITIONS]
   AT LOCATION '<destination_path>'
   [DRY RUN]
 ```
@@ -114,6 +118,7 @@ BUILD INDEXTABLES COMPANION FOR PARQUET '<parquet_directory>'
 | `FROM VERSION` | — | Start sync from a specific Delta version (Delta only) |
 | `FROM SNAPSHOT` | — | Time-travel to a specific Iceberg snapshot ID (Iceberg only) |
 | `WHERE` | — | Partition predicates to filter which files are indexed |
+| `INVALIDATE ALL PARTITIONS` | off | Override WHERE-scoped invalidation to invalidate splits across all partitions |
 | `DRY RUN` | off | Preview the sync plan without creating splits |
 | `AT LOCATION` | *(required)* | Destination path for the companion index |
 | `CATALOG` | — | Catalog name for Unity Catalog (Delta) or Iceberg catalogs |
@@ -290,6 +295,32 @@ BUILD INDEXTABLES COMPANION FOR DELTA 's3://warehouse/events'
 
 No separate pipelines, CDC streams, or version tracking required. If a sync is interrupted, restarting picks up where it left off.
 
+### WHERE-Scoped Invalidation
+
+When a `WHERE` clause is specified, only splits whose partition values fall within the WHERE range are candidates for invalidation. Splits outside the range are untouched — even if their source files no longer exist. This avoids unnecessary re-indexing when you only care about a subset of partitions.
+
+To override this behavior and invalidate splits across all partitions, add `INVALIDATE ALL PARTITIONS`:
+
+```sql
+BUILD INDEXTABLES COMPANION FOR DELTA 's3://warehouse/events'
+  WHERE date >= '2024-02-01'
+  INVALIDATE ALL PARTITIONS
+  AT LOCATION 's3://warehouse/events_index'
+```
+
+### Distributed Log Reading
+
+For source tables with millions of files, reading the transaction log on the driver can cause OOM errors. Distributed log reading distributes checkpoint and manifest reads across Spark executors via RDDs, and pushes `WHERE` predicates to Rust via native `PartitionFilter` so filtered-out entries never cross the JNI boundary.
+
+Arrow FFI (zero-copy columnar export) is used by default for all distributed log reads, eliminating serialization overhead.
+
+Both features are enabled by default:
+
+```scala
+spark.conf.set("spark.indextables.companion.sync.distributedLogRead.enabled", "true")
+spark.conf.set("spark.indextables.companion.sync.arrowFfi.enabled", "true")
+```
+
 ## Read Path
 
 Companion mode is **transparent at read time**:
@@ -298,6 +329,16 @@ Companion mode is **transparent at read time**:
 - Document data is resolved from the original parquet files automatically
 - All standard filters, aggregations, and IndexQuery operations work identically to standalone mode
 - A **write guard** prevents accidental direct writes (non-companion `INSERT`/`APPEND`) to companion-mode tables
+
+### Arrow FFI Columnar Reads
+
+Companion splits use zero-copy Arrow FFI columnar reads by default. Data flows directly from parquet through Rust Arrow into Spark's columnar engine with no row-by-row serialization. This is enabled by default:
+
+```scala
+spark.conf.set("spark.indextables.read.columnar.enabled", "true")
+```
+
+Set to `false` to force the row-based path. Non-companion splits always use the row path regardless of this setting.
 
 ## MERGE SPLITS with Companion
 
@@ -348,6 +389,9 @@ PREWARM INDEXTABLES CACHE 's3://warehouse/events_index'
 | `spark.indextables.companion.sync.batchSize` | `defaultParallelism` | Tasks per Spark job |
 | `spark.indextables.companion.sync.maxConcurrentBatches` | `6` | Maximum concurrent Spark jobs during sync |
 | `spark.indextables.companion.schedulerPool` | `indextables-companion` | Spark scheduler pool name for batch parallelism |
+| `spark.indextables.companion.sync.distributedLogRead.enabled` | `true` | Distribute transaction log reads across executors |
+| `spark.indextables.companion.sync.arrowFfi.enabled` | `true` | Use Arrow FFI for distributed log reads |
+| `spark.indextables.read.columnar.enabled` | `true` | Enable Arrow FFI columnar reads for companion splits |
 
 :::note Scheduler Mode
 Concurrent batch execution requires `spark.scheduler.mode=FAIR`. This is the default on Databricks. On open-source Spark, set it explicitly in your cluster configuration.
