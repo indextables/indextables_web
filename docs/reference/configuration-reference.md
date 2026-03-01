@@ -132,6 +132,7 @@ Settings that control read operations and query execution.
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `spark.indextables.read.defaultLimit` | 250 | Default result limit when no LIMIT clause |
+| `spark.indextables.read.columnar.enabled` | true | Enable Arrow FFI columnar reads for companion splits. Set to `false` to force row-based reads. |
 | `spark.indextables.docBatch.enabled` | true | Enable batch document retrieval |
 | `spark.indextables.docBatch.maxSize` | 1000 | Documents per batch (1-10000) |
 
@@ -217,6 +218,9 @@ Settings for the L2 disk cache on NVMe storage.
 | `spark.indextables.cache.disk.path` | auto | Cache directory path |
 | `spark.indextables.cache.disk.maxSize` | 0 (auto) | Maximum cache size (0 = auto 2/3 of disk) |
 | `spark.indextables.cache.disk.manifestSyncInterval` | 30 | Seconds between manifest writes |
+| `spark.indextables.cache.disk.writeQueue.mode` | size | Write queue mode: `fragment` (bounded slots) or `size` (byte-based backpressure) |
+| `spark.indextables.cache.disk.writeQueue.capacity` | 1G | Write queue capacity: slot count (fragment mode) or byte limit like `1G` (size mode) |
+| `spark.indextables.cache.disk.dropWritesWhenFull` | true | Drop query-path writes instead of blocking when the write queue is full |
 | `spark.indextables.cache.coalesceMaxGap` | 512K | Maximum gap between parquet byte ranges to coalesce into a single fetch. Lower values reduce over-fetch for narrow projections on wide tables. |
 
 ### In-Memory Cache
@@ -377,6 +381,8 @@ Settings for the `BUILD INDEXTABLES COMPANION` command. See [Companion Mode](/do
 | `spark.indextables.companion.sync.batchSize` | defaultParallelism | Tasks per Spark job |
 | `spark.indextables.companion.sync.maxConcurrentBatches` | 6 | Maximum concurrent Spark jobs during sync |
 | `spark.indextables.companion.schedulerPool` | indextables-companion | Spark scheduler pool name for batch parallelism |
+| `spark.indextables.companion.sync.distributedLogRead.enabled` | true | Distribute transaction log reads across executors (avoids driver OOM for tables with millions of files) |
+| `spark.indextables.companion.sync.arrowFfi.enabled` | true | Use Arrow FFI for distributed log reads (zero-copy columnar export) |
 
 ## Iceberg
 
