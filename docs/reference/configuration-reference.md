@@ -52,6 +52,21 @@ Produces consistently-sized splits by requesting a shuffle via Spark's `Requires
 | `spark.indextables.write.optimizeWrite.samplingRatio` | 1.1 | Split-to-shuffle-data ratio for size estimation |
 | `spark.indextables.write.optimizeWrite.minRowsForEstimation` | 10000 | Minimum rows for history-based estimation |
 
+### Arrow FFI Write Path
+
+Settings for the zero-copy Arrow FFI columnar write path, which replaces the legacy TANT batch serialization with Arrow C Data Interface FFI for ~31% average write throughput improvement.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.write.arrowFfi.enabled` | true | Enable Arrow FFI columnar ingestion. Set to `false` to use legacy TANT batch path. |
+| `spark.indextables.write.arrowFfi.batchSize` | 8192 | Rows per Arrow batch sent to Rust via FFI |
+
+### Arrow FFI Aggregation Reads
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.read.aggregation.arrowFfi.enabled` | true | Enable Arrow FFI for all aggregation paths (simple, GROUP BY, bucket). Set to `false` for legacy per-bucket JNI reads. |
+
 ## Transaction Log
 
 Settings for transaction log management, checkpointing, and caching.
@@ -131,8 +146,9 @@ Settings that control read operations and query execution.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `spark.indextables.read.defaultLimit` | 250 | Default result limit when no LIMIT clause |
-| `spark.indextables.read.columnar.enabled` | true | Enable Arrow FFI columnar reads for companion splits. Set to `false` to force row-based reads. |
+| `spark.indextables.read.mode` | fast | Read mode: `fast` (default limit 250) or `complete` (no limit, streams all results). See [Read Mode](#read-mode) below. |
+| `spark.indextables.read.defaultLimit` | 250 | Default result limit when no LIMIT clause (applies in `fast` mode only) |
+| `spark.indextables.read.columnar.enabled` | true | Enable Arrow FFI columnar reads for all split types. Set to `false` to force legacy row-based reads. |
 | `spark.indextables.docBatch.enabled` | true | Enable batch document retrieval |
 | `spark.indextables.docBatch.maxSize` | 1000 | Documents per batch (1-10000) |
 
@@ -151,6 +167,26 @@ With `auto`, the system dynamically adjusts split batching based on cluster size
 - **Large tables**: Batches splits to maintain ~4× over-subscription, capped at `maxSplitsPerTask`
 
 Set to a fixed number (e.g., `"1"`) to disable auto mode.
+:::
+
+### Read Mode
+
+The `read.mode` setting controls whether IndexTables applies a default result limit or streams all matching results.
+
+| Mode | Default Limit | Behavior |
+|------|--------------|----------|
+| `fast` *(default)* | 250 rows | Applies `defaultLimit` when no explicit `LIMIT` clause. Best for interactive queries. |
+| `complete` | No limit | Streams all matching results in ~128K-row batches with bounded ~24MB memory. No artificial row cap. |
+
+**When to use `complete` mode:** Use `complete` mode when IndexTables is used as a data source for extracts, ETL pipelines, or any workload where the default 250-row limit would cause correctness issues — for example, when using [Companion Mode](/docs/core-concepts/companion-mode) to query entire partitions or large date ranges against Delta/Iceberg tables. In `fast` mode, results beyond the default limit are silently truncated, which can produce incomplete extracts.
+
+```scala
+// Set complete mode for ETL workloads
+spark.conf.set("spark.indextables.read.mode", "complete")
+```
+
+:::warning
+`complete` mode removes the safety net of the default 250-row limit. For interactive ad-hoc queries, `fast` mode prevents accidental full-table scans. Switch to `complete` only when you need all matching rows.
 :::
 
 ### Prescan Filtering
@@ -221,6 +257,7 @@ Settings for the L2 disk cache on NVMe storage.
 | `spark.indextables.cache.disk.writeQueue.mode` | size | Write queue mode: `fragment` (bounded slots) or `size` (byte-based backpressure) |
 | `spark.indextables.cache.disk.writeQueue.capacity` | 1G | Write queue capacity: slot count (fragment mode) or byte limit like `1G` (size mode) |
 | `spark.indextables.cache.disk.dropWritesWhenFull` | true | Drop query-path writes instead of blocking when the write queue is full |
+| `spark.indextables.cache.disk.writeQueue.maxBudget` | (unlimited) | Maximum native memory budget for the write queue. Limits how much Rust-side memory the write queue can consume. |
 | `spark.indextables.cache.coalesceMaxGap` | 512K | Maximum gap between parquet byte ranges to coalesce into a single fetch. Lower values reduce over-fetch for narrow projections on wide tables. |
 
 ### In-Memory Cache
@@ -383,6 +420,18 @@ Settings for the `BUILD INDEXTABLES COMPANION` command. See [Companion Mode](/do
 | `spark.indextables.companion.schedulerPool` | indextables-companion | Spark scheduler pool name for batch parallelism |
 | `spark.indextables.companion.sync.distributedLogRead.enabled` | true | Distribute transaction log reads across executors (avoids driver OOM for tables with millions of files) |
 | `spark.indextables.companion.sync.arrowFfi.enabled` | true | Use Arrow FFI for distributed log reads (zero-copy columnar export) |
+| `spark.indextables.companion.tableRootDesignator` | - | Named table root for cross-region reads. When set, companion reads resolve parquet paths from the named root instead of the default source path. Fails if the designated root is not found. |
+
+### Streaming Companion Sync
+
+Settings for continuous streaming sync via `WITH STREAMING POLL INTERVAL`.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.companion.sync.maxConsecutiveErrors` | 10 | Abort streaming after N consecutive errors |
+| `spark.indextables.companion.sync.errorBackoffMultiplier` | 2 | Base for exponential backoff on error (capped at 10x poll interval) |
+| `spark.indextables.companion.sync.quietPollLogInterval` | 10 | Log no-change polls every N cycles (suppress noise) |
+| `spark.indextables.companion.sync.maxIncrementalCommits` | 100 | Fall back to full scan when Delta version gap exceeds this |
 
 ## Iceberg
 
