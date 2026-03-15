@@ -321,6 +321,79 @@ spark.conf.set("spark.indextables.companion.sync.distributedLogRead.enabled", "t
 spark.conf.set("spark.indextables.companion.sync.arrowFfi.enabled", "true")
 ```
 
+## Streaming Companion Sync
+
+For continuous indexing, add `WITH STREAMING POLL INTERVAL` to keep a companion index perpetually up-to-date as the source table receives new data. Rather than scanning the full source table on each poll cycle, the implementation reads only the Delta commit log or Iceberg manifest deltas — making each sync cycle proportional to the amount of new data, not the total table size.
+
+```sql
+-- Run continuously in a background thread, polling every 30 seconds
+BUILD INDEXTABLES COMPANION FOR DELTA 's3://bucket/events'
+  INDEXING MODES ('message':'text', 'src_ip':'ipaddress')
+  AT LOCATION 's3://bucket/events_index'
+  WITH STREAMING POLL INTERVAL 30 SECONDS
+```
+
+### How It Works
+
+On each poll cycle:
+
+1. **Cheap version probe** — a single metadata call checks whether the source has changed (1 GET for Delta, 1 catalog call for Iceberg). If unchanged, the cycle is skipped entirely — no Spark job submitted.
+2. **Incremental reads** — only commit log entries since the last sync are read (Delta JSON commit files or new Iceberg manifests), not the full checkpoint.
+3. **Removed-file invalidation** — for Delta, removed files from `DELETE`/`UPDATE`/`MERGE INTO` operations invalidate affected companion splits and re-index sibling files.
+4. **Restart resume** — on restart, the streaming loop reads the last synced version from companion transaction log metadata and picks up incrementally.
+
+### Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `spark.indextables.companion.sync.maxConsecutiveErrors` | 10 | Abort streaming after N consecutive errors |
+| `spark.indextables.companion.sync.errorBackoffMultiplier` | 2 | Base for exponential backoff on error |
+| `spark.indextables.companion.sync.quietPollLogInterval` | 10 | Log no-change polls every N cycles |
+| `spark.indextables.companion.sync.maxIncrementalCommits` | 100 | Fall back to full scan when version gap exceeds this |
+
+### Streaming Metrics
+
+Each sync cycle logs structured metrics: `syncCycles`, `totalFilesIndexed`, `totalDurationMs`, `errorCount`, `totalSplitsCreated`, `pollsWithNoChanges`.
+
+## Multi-Region Table Roots
+
+For cross-region deployments, table roots allow companion readers in each region to use local S3/Azure replicas instead of cross-region parquet access.
+
+### SQL Commands
+
+```sql
+-- Register a named table root
+SET INDEXTABLES TABLE ROOT 'us-east' = 's3://us-east-replica/events'
+  FOR 's3://warehouse/events_index';
+
+-- Remove a table root
+UNSET INDEXTABLES TABLE ROOT 'us-east'
+  FOR 's3://warehouse/events_index';
+
+-- List all table roots
+DESCRIBE INDEXTABLES TABLE ROOTS 's3://warehouse/events_index';
+```
+
+### Read-Time Root Selection
+
+Configure readers to use a specific table root:
+
+```scala
+spark.conf.set("spark.indextables.companion.tableRootDesignator", "us-east")
+```
+
+When a designator is set, companion reads resolve parquet paths from the named root instead of the default source path. If the designated root is not found in the table's metadata, the query fails with a clear error (no silent fallback).
+
+### BUILD COMPANION with Table Roots
+
+Table roots can also be specified during companion build:
+
+```sql
+BUILD INDEXTABLES COMPANION FOR DELTA 's3://warehouse/events'
+  TABLE ROOTS ('us-east':'s3://us-east-replica/events', 'eu-west':'s3://eu-west-replica/events')
+  AT LOCATION 's3://warehouse/events_index'
+```
+
 ## Read Path
 
 Companion mode is **transparent at read time**:
@@ -330,15 +403,35 @@ Companion mode is **transparent at read time**:
 - All standard filters, aggregations, and IndexQuery operations work identically to standalone mode
 - A **write guard** prevents accidental direct writes (non-companion `INSERT`/`APPEND`) to companion-mode tables
 
+### Read Mode: Complete vs. Fast
+
+IndexTables supports two read modes that control how results are returned:
+
+| Mode | Default Limit | Behavior |
+|------|--------------|----------|
+| `fast` *(default)* | 250 rows | Applies `defaultLimit` when no explicit `LIMIT` clause. Best for interactive queries. |
+| `complete` | No limit | Streams all matching results in ~128K-row batches with bounded ~24MB memory. No artificial row cap. |
+
+```scala
+// Set complete mode for ETL / extract workloads
+spark.conf.set("spark.indextables.read.mode", "complete")
+```
+
+**When to use `complete` mode:** If you are using Companion Mode as a data source for **extracts, ETL pipelines, or any workload that requires all matching rows**, use `complete` mode. The default `fast` mode applies a 250-row limit when no `LIMIT` clause is present, which can silently truncate results and cause correctness issues in downstream processing. For example, querying an entire partition of a Delta table through a companion index in `fast` mode would return only 250 rows — `complete` mode streams the full result set with bounded memory.
+
+:::tip
+For interactive ad-hoc queries, keep `fast` mode — it prevents accidental full-table scans. Switch to `complete` only for batch/ETL workloads where you need all matching rows.
+:::
+
 ### Arrow FFI Columnar Reads
 
-Companion splits use zero-copy Arrow FFI columnar reads by default. Data flows directly from parquet through Rust Arrow into Spark's columnar engine with no row-by-row serialization. This is enabled by default:
+All split types (companion and standalone) use zero-copy Arrow FFI streaming columnar reads by default. Data flows directly from the storage layer through Rust Arrow into Spark's columnar engine with no row-by-row serialization. Results are streamed in ~128K-row batches with bounded memory, enabling arbitrarily large result sets without OOM risk.
 
 ```scala
 spark.conf.set("spark.indextables.read.columnar.enabled", "true")
 ```
 
-Set to `false` to force the row-based path. Non-companion splits always use the row path regardless of this setting.
+Set to `false` to force the legacy row-based path (not recommended).
 
 ## MERGE SPLITS with Companion
 

@@ -31,6 +31,7 @@ const sidebars = {
         'configuration/cache-settings',
         'configuration/s3-configuration',
         'configuration/azure-configuration',
+        'configuration/memory-management',
       ],
     },
     {

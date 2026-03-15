@@ -166,6 +166,43 @@ Returns detailed information about all transaction log actions including:
 - `min_values/max_values` - Column statistics for data skipping
 - And many more fields for debugging and analysis
 
+## TABLE ROOT Commands
+
+Manage named table roots for cross-region companion reads. See [Multi-Region Table Roots](/docs/core-concepts/companion-mode#multi-region-table-roots) for details.
+
+### SET TABLE ROOT
+
+Register a named table root:
+
+```sql
+SET INDEXTABLES TABLE ROOT 'us-east' = 's3://us-east-replica/events'
+  FOR 's3://warehouse/events_index';
+```
+
+### UNSET TABLE ROOT
+
+Remove a named table root:
+
+```sql
+UNSET INDEXTABLES TABLE ROOT 'us-east'
+  FOR 's3://warehouse/events_index';
+```
+
+### DESCRIBE TABLE ROOTS
+
+List all registered table roots for a companion index:
+
+```sql
+DESCRIBE INDEXTABLES TABLE ROOTS 's3://warehouse/events_index';
+```
+
+#### Output
+
+| Column | Description |
+|--------|-------------|
+| root_name | Named table root identifier |
+| root_path | Storage path for the root |
+
 ## DESCRIBE ENVIRONMENT
 
 View Spark and Hadoop configuration across all executors:
