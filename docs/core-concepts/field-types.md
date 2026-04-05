@@ -108,11 +108,67 @@ df.write.format("io.indextables.spark.core.IndexTables4SparkTableProvider")
 - `IN` (set membership): `client_ip IN ('192.168.1.1', '10.0.0.1')`
 - IPv6 support: `client_ip = '2001:db8::1'`
 
+### CIDR Notation
+
+CIDR notation and wildcard patterns are transparently expanded at the native layer. Pass them as normal string values — no special syntax is required.
+
+**Equality filter with CIDR:**
+
+```scala
+df.filter($"client_ip" === "192.168.1.0/24")   // matches all IPs in 192.168.1.0–255
+df.filter($"client_ip" === "10.0.0.0/8")        // matches 10.0.0.0–10.255.255.255
+df.filter($"client_ip" === "192.168.1.1/32")    // exact host match
+```
+
+**IN filter with CIDR and exact IPs:**
+
+```scala
+df.filter($"client_ip".isin("10.0.0.0/8", "192.168.1.0/24"))
+df.filter($"client_ip".isin("10.0.0.0/8", "203.0.113.5"))  // CIDR + exact IP
+```
+
+**IndexQuery with CIDR:**
+
+```scala
+df.filter($"client_ip" indexquery "192.168.1.0/24")
+df.filter($"client_ip" indexquery "192.168.1.0/24 OR 10.0.0.0/8")
+df.filter($"client_ip" indexquery "10.0.0.0/8 AND NOT 10.0.1.0/24")
+```
+
+**Wildcard patterns:**
+
+```scala
+df.filter($"client_ip" === "192.168.1.*")   // equivalent to /24
+df.filter($"client_ip" === "10.0.*.*")      // equivalent to /16
+```
+
+**IPv6 CIDR** (requires quoting in IndexQuery due to colons):
+
+```scala
+// DataFrame filter — no quoting needed
+df.filter($"client_ip" === "2001:db8::/32")
+
+// IndexQuery — quote the value
+df.filter($"client_ip" indexquery "\"2001:db8::/32\"")
+```
+
+**CIDR patterns reference:**
+
+| Pattern | Matches |
+|---------|---------|
+| `192.168.1.0/24` | `192.168.1.0` – `192.168.1.255` |
+| `10.0.0.0/8` | `10.0.0.0` – `10.255.255.255` |
+| `192.168.1.1/32` | exact host `192.168.1.1` |
+| `0.0.0.0/0` | all IPv4 addresses |
+| `192.168.1.*` | `192.168.1.0` – `192.168.1.255` |
+| `10.0.*.*` | `10.0.0.0` – `10.0.255.255` |
+| `2001:db8::/32` | IPv6 range |
+
 ### Use Cases
 
 - Network traffic analysis
 - Access log filtering by source/destination IP
-- Geo-IP filtering with CIDR-style range queries
+- Subnet-level filtering with CIDR notation
 
 ## Supported Schema Types
 

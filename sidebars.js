@@ -53,6 +53,7 @@ const sidebars = {
         'sql-commands/drop-partitions',
         'sql-commands/prewarm-cache',
         'sql-commands/describe-commands',
+        'sql-commands/profiler',
       ],
     },
     {
