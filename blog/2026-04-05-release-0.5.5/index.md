@@ -80,6 +80,36 @@ RESET INDEXTABLES PROFILER CACHE
 
 `RESET` reads and atomically clears counters, making it safe for measure–then–reset workflows.
 
+## CIDR Notation for IP Address Fields
+
+IP address fields now accept **CIDR notation and wildcard patterns** directly, expanded transparently at the native layer. No special configuration is required — pass the CIDR string wherever you would pass an IP.
+
+```scala
+// Match an entire subnet
+df.filter($"client_ip" === "192.168.1.0/24")
+
+// Multiple subnets with IN
+df.filter($"client_ip".isin("10.0.0.0/8", "192.168.1.0/24"))
+
+// IndexQuery with CIDR and boolean logic
+df.filter($"client_ip" indexquery "10.0.0.0/8 AND NOT 10.0.1.0/24")
+```
+
+Wildcard patterns are also supported:
+
+```scala
+df.filter($"client_ip" === "192.168.1.*")   // equivalent to /24
+df.filter($"client_ip" === "10.0.*.*")      // equivalent to /16
+```
+
+IPv6 CIDR works the same way in DataFrame filters. In IndexQuery, quote the value to avoid the colon being parsed as a field separator:
+
+```scala
+df.filter($"client_ip" indexquery "\"2001:db8::/32\"")
+```
+
+See [IP Address Fields](/docs/core-concepts/field-types#ip-address-fields) for the full reference.
+
 ## Additional Changes
 
 - **tantivy4java 0.34.4** — performance and stability improvements in the native layer  
